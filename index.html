@@ -25,21 +25,24 @@
         }
         #gameWrapper {
             position: relative;
-            width: 900px;
+            width: min(100vw, 100vh * 1.5); /* maintain 3:2 aspect */
             max-width: 100vw;
             max-height: 100vh;
-            aspect-ratio: 900 / 600;
+            aspect-ratio: 3 / 2;
             touch-action: none;
+            background: #141428;
+            border-radius: 12px;
+            border: 2px solid #2a2a4a;
+            box-shadow: 0 0 40px rgba(0, 100, 255, 0.2);
+            overflow: hidden;
         }
         canvas {
-            width: 100%;
-            height: 100%;
+            width: 100% !important;
+            height: 100% !important;
             display: block;
-            border: 2px solid #2a2a4a;
-            border-radius: 12px;
             background: #141428;
-            box-shadow: 0 0 40px rgba(0, 100, 255, 0.2);
             touch-action: none;
+            pointer-events: auto;
         }
 
         /* Menu overlay */
@@ -65,7 +68,7 @@
             pointer-events: none;
         }
         #menu h1 {
-            font-size: 3.5rem;
+            font-size: clamp(2rem, 8vw, 4rem);
             color: #88ccff;
             text-shadow: 0 0 20px #44aaff;
             margin-bottom: 10px;
@@ -73,20 +76,20 @@
         }
         #menu p {
             color: #8899bb;
-            font-size: 1.2rem;
+            font-size: clamp(0.8rem, 2vw, 1.2rem);
             margin-bottom: 30px;
         }
         .menu-btn {
             background: #1a2a4a;
             border: 2px solid #3a6a9a;
             color: #ccddff;
-            font-size: 1.6rem;
-            padding: 14px 48px;
+            font-size: clamp(1rem, 3vw, 1.6rem);
+            padding: 12px 28px;
             margin: 10px;
             border-radius: 40px;
             cursor: pointer;
             transition: 0.2s;
-            min-width: 240px;
+            min-width: 160px;
             text-align: center;
             font-weight: 600;
             letter-spacing: 1px;
@@ -162,7 +165,7 @@
             background: radial-gradient(circle, #ff6644, #cc2200);
             border: 3px solid #ffaa44;
             color: white;
-            font-size: 1.8rem;
+            font-size: clamp(1.2rem, 4vw, 2.2rem);
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -186,7 +189,7 @@
             top: 10px;
             left: 10px;
             color: #aac;
-            font-size: 1rem;
+            font-size: clamp(0.7rem, 1.5vw, 1rem);
             font-family: monospace;
             z-index: 15;
             pointer-events: none;
@@ -194,7 +197,7 @@
             line-height: 1.6;
         }
         #hud .timer {
-            font-size: 1.6rem;
+            font-size: clamp(1rem, 3vw, 1.6rem);
             color: #ffcc44;
         }
         #settingsBtn {
@@ -206,9 +209,9 @@
             border: 1px solid #3a5a7a;
             color: #ccddff;
             border-radius: 50%;
-            width: 36px;
-            height: 36px;
-            font-size: 1.2rem;
+            width: clamp(28px, 4vw, 36px);
+            height: clamp(28px, 4vw, 36px);
+            font-size: clamp(0.8rem, 2vw, 1.2rem);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -304,7 +307,7 @@
             touch-action: manipulation;
         }
 
-        /* Game Over overlay (drawn on canvas, but we add a UI button) */
+        /* Game Over overlay */
         #gameOverMenu {
             position: absolute;
             top: 0;
@@ -315,7 +318,7 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            background: rgba(0,0,0,0.65);
+            background: rgba(0,0,0,0.75);
             backdrop-filter: blur(4px);
             border-radius: 12px;
             z-index: 25;
@@ -325,22 +328,31 @@
             display: flex;
         }
         #gameOverMenu h1 {
-            font-size: 3rem;
+            font-size: clamp(2.5rem, 8vw, 4.5rem);
             margin-bottom: 10px;
-            text-shadow: 0 0 30px currentColor;
+            text-shadow: 0 0 30px currentColor, 0 0 60px #000;
+            color: #fff;
         }
         #gameOverMenu .sub {
-            color: #aac;
-            font-size: 1.2rem;
+            color: #ddd;
+            font-size: clamp(1rem, 2vw, 1.4rem);
             margin-bottom: 30px;
+            text-shadow: 0 0 20px #000;
         }
         #gameOverMenu .menu-btn {
             min-width: 160px;
-            font-size: 1.2rem;
+            font-size: clamp(1rem, 2vw, 1.2rem);
             padding: 12px 28px;
         }
 
-        /* Responsive scaling */
+        /* Hide canvas border when wrapper is used */
+        canvas {
+            border: none;
+        }
+        #gameWrapper {
+            border: 2px solid #2a2a4a;
+        }
+
         @media (max-width: 600px) {
             #menu h1 { font-size: 2.4rem; }
             .menu-btn { font-size: 1.2rem; padding: 12px 28px; min-width: 160px; }
@@ -476,7 +488,7 @@
         let countdown = 3;
         let matchTime = 60;
         let matchTimerInterval = null;
-        let gameOverWinner = null; // 'player' or 'enemy' or 'draw' or 'timeout'
+        let gameOverWinner = null;
 
         // ===== Players =====
         const player = {
@@ -570,13 +582,11 @@
         }
 
         function applySettingsToControls() {
-            // Joystick area size (width relative to wrapper)
             moveJoystickArea.style.width = settings.joySize + '%';
             moveJoystickArea.style.aspectRatio = '1/1';
             moveJoystickArea.style.bottom = settings.joyY + '%';
             moveJoystickArea.style.left = settings.joyX + '%';
 
-            // Fire button size
             fireBtn.style.width = settings.fireSize + '%';
             fireBtn.style.aspectRatio = '1/1';
             fireBtn.style.bottom = settings.fireY + '%';
@@ -700,6 +710,7 @@
                 movePlayer(player, dx, dy);
             }
 
+            // Aim with mouse or auto-aim for touch
             if (touchFire) {
                 const targetX = enemy.alive ? enemy.x : mouseX;
                 const targetY = enemy.alive ? enemy.y : mouseY;
@@ -709,6 +720,10 @@
                 }
             } else {
                 player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
+                // Mouse shooting: if mouseDown, shoot at mouse position (or enemy if you want auto-aim)
+                if (mouseDown && player.alive) {
+                    shoot(player, mouseX, mouseY, false);
+                }
             }
 
             updateAI();
@@ -844,6 +859,7 @@
             drawMech(player, '#44aaff');
             drawMech(enemy, '#ff6644');
 
+            // Crosshair (only if not touch firing)
             if (!touchFire) {
                 ctx.strokeStyle = '#ff4444';
                 ctx.lineWidth = 2;
@@ -875,29 +891,36 @@
         function showGameOver() {
             gameOverMenu.classList.add('show');
             controlsOverlay.classList.remove('active');
-            let title = '', sub = '';
+            let title = '', sub = '', color = '#fff';
             if (gameOverWinner === 'player') {
                 title = '🏆 YOU WIN!';
                 sub = 'You eliminated the enemy!';
+                color = '#44ff44';
             } else if (gameOverWinner === 'enemy') {
                 title = '💀 YOU LOSE';
                 sub = 'Enemy eliminated you.';
+                color = '#ff4444';
             } else if (gameOverWinner === 'timeout') {
                 if (player.health > enemy.health) {
                     title = '🏆 YOU WIN!';
                     sub = 'More health when time ran out.';
+                    color = '#44ff44';
                 } else if (enemy.health > player.health) {
                     title = '💀 YOU LOSE';
                     sub = 'Enemy had more health.';
+                    color = '#ff4444';
                 } else {
                     title = '🤝 DRAW';
                     sub = 'Equal health at time end.';
+                    color = '#ffcc44';
                 }
             } else {
                 title = '🤝 DRAW';
                 sub = 'Match ended.';
+                color = '#ffcc44';
             }
             gameOverTitle.textContent = title;
+            gameOverTitle.style.color = color;
             gameOverSub.textContent = sub;
         }
 
@@ -986,7 +1009,7 @@
             }
         });
 
-        // Mouse
+        // Mouse (canvas)
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -1007,6 +1030,9 @@
                 mouseDown = false;
                 e.preventDefault();
             }
+        });
+        canvas.addEventListener('mouseleave', () => {
+            mouseDown = false;
         });
         canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
@@ -1087,6 +1113,7 @@
         fireBtn.addEventListener('touchcancel', (e) => {
             touchFire = false;
         });
+        // Also allow mouse click on fire button for desktop touchpad
         fireBtn.addEventListener('mousedown', (e) => {
             e.preventDefault();
             touchFire = true;
@@ -1153,12 +1180,12 @@
         }
         gameLoop();
 
-        // Responsive resize
+        // Responsive resize: ensure wrapper fills screen properly
         function resizeGame() {
             const wrapper = document.getElementById('gameWrapper');
             const maxWidth = window.innerWidth;
             const maxHeight = window.innerHeight;
-            const aspect = 900 / 600;
+            const aspect = 3 / 2;
             let w = maxWidth;
             let h = w / aspect;
             if (h > maxHeight) {
