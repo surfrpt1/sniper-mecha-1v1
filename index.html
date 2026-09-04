@@ -681,29 +681,66 @@
         };
         const remotePlayers = new Map();
 
-        // Bullet pool with per-weapon colors
-        const bulletGeo = new THREE.SphereGeometry(0.22, 8, 8);
+        // Bullet pool with per-weapon colors + glow sprites (always camera-facing)
+        const BULLET_Y = 0.75; // gun height, matches muzzle
+        const bulletGeo = new THREE.SphereGeometry(0.34, 10, 10);
         const bulletMats = {};
         for (const k in WEAPONS) {
-            bulletMats[k] = new THREE.MeshStandardMaterial({ color: WEAPONS[k].color, emissive: WEAPONS[k].color, emissiveIntensity: 0.9 });
+            bulletMats[k] = new THREE.MeshStandardMaterial({ color: WEAPONS[k].color, emissive: WEAPONS[k].color, emissiveIntensity: 2.2 });
+        }
+        function makeGlowTexture() {
+            const c = document.createElement('canvas'); c.width = c.height = 64;
+            const g = c.getContext('2d');
+            const grad = g.createRadialGradient(32, 32, 2, 32, 32, 30);
+            grad.addColorStop(0, 'rgba(255,255,255,1)');
+            grad.addColorStop(0.35, 'rgba(255,255,255,0.7)');
+            grad.addColorStop(1, 'rgba(255,255,255,0)');
+            g.fillStyle = grad; g.fillRect(0, 0, 64, 64);
+            return new THREE.CanvasTexture(c);
+        }
+        const glowTex = makeGlowTexture();
+        const glowMats = {};
+        for (const k in WEAPONS) {
+            glowMats[k] = new THREE.SpriteMaterial({ map: glowTex, color: WEAPONS[k].color, transparent: true, opacity: 0.9, depthWrite: false, blending: THREE.AdditiveBlending });
         }
         const bulletMeshes = [];
         function updateBulletVisuals(list) {
             while (bulletMeshes.length < list.length) {
                 const m = new THREE.Mesh(bulletGeo, bulletMats.rifle);
+                const glow = new THREE.Sprite(glowMats.rifle);
+                glow.scale.set(2.6, 2.6, 1);
+                m.add(glow);
+                m.userData.glow = glow;
                 scene.add(m); bulletMeshes.push(m);
             }
             for (let i = 0; i < bulletMeshes.length; i++) {
                 const m = bulletMeshes[i];
                 if (i < list.length) {
                     const b = list[i];
+                    const wk = b.weapon || b.w || 'rifle';
                     m.visible = true;
-                    m.material = bulletMats[b.weapon] || bulletMats[b.w] || bulletMats.rifle;
-                    m.position.set(b.x, 0.25, b.y !== undefined ? b.y : b.z);
-                    const s = b.weapon === 'sniper' || b.w === 'sniper' ? 1.5 : b.weapon === 'smg' || b.w === 'smg' ? 0.8 : 1.0;
+                    m.material = bulletMats[wk] || bulletMats.rifle;
+                    if (m.userData.glow) m.userData.glow.material = glowMats[wk] || glowMats.rifle;
+                    m.position.set(b.x, BULLET_Y, b.y !== undefined ? b.y : b.z);
+                    const s = wk === 'sniper' ? 1.5 : wk === 'smg' ? 0.85 : 1.0;
                     m.scale.set(s, s, s);
                 } else m.visible = false;
             }
+        }
+        // Muzzle flash: bright pop at the gun tip on every shot
+        const muzzleFlash = new THREE.Mesh(
+            new THREE.SphereGeometry(0.55, 10, 10),
+            new THREE.MeshBasicMaterial({ color: 0xffffaa, transparent: true, opacity: 0.95, depthWrite: false })
+        );
+        muzzleFlash.visible = false;
+        scene.add(muzzleFlash);
+        function showMuzzle(x, z, weapon) {
+            const w = WEAPONS[weapon] || WEAPONS.rifle;
+            muzzleFlash.material.color.set(w.color);
+            muzzleFlash.position.set(x, BULLET_Y, z);
+            muzzleFlash.visible = true;
+            clearTimeout(showMuzzle._t);
+            showMuzzle._t = setTimeout(() => { muzzleFlash.visible = false; }, 70);
         }
 
         // Bot (offline)
@@ -948,16 +985,31 @@
                         remotePlayers.set(w.id, { mesh, name: w.name, playerIndex: w.playerIndex, x: w.x, z: w.y, angle: w.angle, health: 100, alive: true });
                     }
                 }
-                // spawn self at server position if provided
+                // Stay in lobby until the host starts (server only simulates a live match).
+                // Hiding the lobby here stranded the host with no Start button, so matches
+                // never went live and the server ignored every shot -> no bullets.
                 const me = (data.hp || []).find(h => h.id === socket.id);
-                lobby.classList.add('hidden'); menu.classList.add('hidden');
-                controlsOverlay.classList.add('active');
-                weaponBar.classList.remove('hidden');
-                if (data.gameState === 'playing') startMatch(data.gameDuration);
-                else { gameState = STATE.PLAYING; }
+                menu.classList.add('hidden');
+                if (data.gameState === 'playing') {
+                    lobby.classList.add('hidden');
+                    controlsOverlay.classList.add('active');
+                    weaponBar.classList.remove('hidden');
+                    startMatch(data.gameDuration);
+                } else {
+                    lobby.classList.remove('hidden');
+                    controlsOverlay.classList.remove('active');
+                    weaponBar.classList.add('hidden');
+                    gameState = STATE.LOBBY;
+                    lobbyStatus.textContent = isHost
+                        ? `Room ${data.room} — you are host, press Start`
+                        : `Joined ${data.room} — waiting for host to start...`;
+                }
                 startGameBtn.classList.toggle('hidden', !(isHost && (roomState === 'waiting' || roomState === 'ended')));
             });
             socket.on('countdown', (data) => {
+                lobby.classList.add('hidden');
+                controlsOverlay.classList.add('active');
+                weaponBar.classList.remove('hidden');
                 gameState = STATE.COUNTDOWN;
                 countdownEl.textContent = data.seconds;
                 countdownEl.classList.add('show');
@@ -966,6 +1018,9 @@
             });
             socket.on('game-start', (data) => {
                 if (data.obstacles) { OBSTACLES = data.obstacles; buildObstacles(OBSTACLES); }
+                lobby.classList.add('hidden');
+                controlsOverlay.classList.add('active');
+                weaponBar.classList.remove('hidden');
                 countdownEl.textContent = 'GO!';
                 sfx.go();
                 setTimeout(() => countdownEl.classList.remove('show'), 600);
@@ -976,7 +1031,7 @@
                 const r = remotePlayers.get(id);
                 if (r) { scene.remove(r.mesh); remotePlayers.delete(id); }
             });
-            socket.on('fx-shot', () => sfx.shoot());
+            socket.on('fx-shot', (d) => { sfx.shoot(); if (d) showMuzzle(d.x, d.y !== undefined ? d.y : d.z, d.weapon); });
             socket.on('fx-hit', () => { flashHitmarker(); sfx.hit(); });
             socket.on('kill-feed', (d) => {
                 addKill(`${d.killer} ⚔ ${d.victim}`);
@@ -1193,7 +1248,7 @@
             } else if (socket) {
                 socket.emit('player-fire', { x: player.x, y: player.z, angle: player.angle, weapon: currentWeapon });
             }
-            // muzzle flash light pulse
+            showMuzzle(sx, sz, currentWeapon);
             return true;
         }
         function updateBotBullets(dt) {
