@@ -432,14 +432,40 @@
             user-select: none;
         }
         .jump-btn:active { transform: scale(0.92); }
+        #layoutHint {
+            position: absolute;
+            top: 12px; left: 50%;
+            transform: translateX(-50%);
+            z-index: 17;
+            background: rgba(10,30,50,0.85);
+            border: 1px solid #ffdd44;
+            color: #ffe27f;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            display: none;
+            pointer-events: none;
+            text-align: center;
+            white-space: nowrap;
+        }
+        #layoutHint.show { display: block; }
+        #controlsOverlay.editing { display: block; pointer-events: auto; }
+        #controlsOverlay.editing .joystick-area,
+        #controlsOverlay.editing .fire-btn,
+        #controlsOverlay.editing .jump-btn {
+            outline: 3px dashed #ffdd44;
+            outline-offset: 4px;
+        }
+        #controlsOverlay.editing .joystick-area { display: block !important; }
+        #controlsOverlay.editing .fire-btn,
+        #controlsOverlay.editing .jump-btn { display: flex !important; }
         @media (hover:hover) and (pointer:fine) {
             .joystick-area { display: none; }
             .fire-btn { display: none; }
             .jump-btn { display: none; }
-            #controlsOverlay.touch .joystick-area,
+            #controlsOverlay.touch .joystick-area { display: block; }
             #controlsOverlay.touch .fire-btn,
             #controlsOverlay.touch .jump-btn { display: flex; }
-            #controlsOverlay.touch .joystick-area { display: block; }
         }
     </style>
 </head>
@@ -519,6 +545,13 @@
                 <button id="fireInc">+</button>
             </div>
             <div class="setting-row">
+                <label>Move buttons</label>
+                <button id="layoutBtn">✋</button>
+            </div>
+            <div class="skin-row">
+                <button class="settings-close-btn" id="resetLayoutBtn" style="background:#3a3a5a;font-size:0.85rem;padding:8px 14px">↺ Reset layout</button>
+            </div>
+            <div class="setting-row">
                 <label>Sound</label>
                 <button id="soundToggle">🔊</button>
             </div>
@@ -534,6 +567,7 @@
             <button class="settings-close-btn" id="settingsMenuBtn" style="background:#7a2a2a">↩ Return to Menu</button>
             <button class="settings-close-btn" id="settingsCloseBtn">Close</button>
         </div>
+        <div id="layoutHint">Drag the stick + buttons anywhere<br>Tap ✋ when done</div>
 
         <div id="controlsOverlay">
             <div class="joystick-area" id="moveJoystickArea">
@@ -1060,9 +1094,10 @@
         let aimActive = false, aimDX = 1, aimDY = 0, aimTouchId = null, aimCenterX = 0, aimCenterY = 0;
         let playerMoving = false;
         let sprintKey = false, jumpQueued = false;
+        let layoutMode = false, hasTouched = false;
 
         // ---------- Settings ----------
-        const defaultSettings = { joySize: 30, fireSize: 22 };
+        const defaultSettings = { joySize: 30, fireSize: 22, pos: null };
         let settings = { ...defaultSettings };
         function loadSettings() {
             try {
@@ -1073,6 +1108,7 @@
             fireSizeVal.textContent = settings.fireSize + '%';
             moveJoystickArea.style.width = settings.joySize + '%';
             fireBtn.style.width = settings.fireSize + '%';
+            applyLayout();
         }
         function saveSettings() { localStorage.setItem('sniperMechaSettings', JSON.stringify(settings)); }
 
@@ -1614,10 +1650,12 @@
 
         // Touch detection: reveal mobile controls
         window.addEventListener('touchstart', function once() {
+            hasTouched = true;
             controlsOverlay.classList.add('touch');
         }, { once: true, passive: true });
 
         function joystickSet(e) {
+            if (layoutMode) return;
             const touch = e.touches[0];
             if (!touch) return;
             const rect = moveJoystickBase.getBoundingClientRect();
@@ -1647,6 +1685,7 @@
 
         // Right side: drag 🔥 like a joystick to aim manually + hold to fire. No auto-aim.
         function aimSet(e) {
+            if (layoutMode) return;
             const t = [...e.touches].find(t => t.identifier === aimTouchId) || e.touches[0];
             if (!t) return;
             let dx = t.clientX - aimCenterX, dy = t.clientY - aimCenterY;
@@ -1668,6 +1707,7 @@
             if (e) e.preventDefault();
         }
         fireBtn.addEventListener('touchstart', (e) => {
+            if (layoutMode) return;
             e.preventDefault(); ac();
             const t = e.changedTouches[0];
             aimTouchId = t.identifier;
@@ -1680,14 +1720,15 @@
         fireBtn.addEventListener('touchcancel', aimEnd);
 
         // Jump button (mobile) — queues a jump, physics runs in movePlayer()
-        jumpBtn.addEventListener('touchstart', (e) => { e.preventDefault(); ac(); jumpQueued = true; }, { passive: false });
+        jumpBtn.addEventListener('touchstart', (e) => { if (layoutMode) return; e.preventDefault(); ac(); jumpQueued = true; }, { passive: false });
         jumpBtn.addEventListener('touchend', (e) => { e.preventDefault(); });
-        jumpBtn.addEventListener('mousedown', (e) => { e.preventDefault(); ac(); jumpQueued = true; });
+        jumpBtn.addEventListener('mousedown', (e) => { if (layoutMode) return; e.preventDefault(); ac(); jumpQueued = true; });
 
         // Settings
         settingsBtn.addEventListener('click', () => { settingsPanel.classList.toggle('show'); ac(); });
         settingsCloseBtn.addEventListener('click', () => settingsPanel.classList.remove('show'));
         function returnToMenu() {
+            if (layoutMode) setLayoutMode(false);
             settingsPanel.classList.remove('show');
             gameOverMenu.classList.add('hidden');
             lobby.classList.add('hidden');
@@ -1728,6 +1769,79 @@
         });
         document.querySelectorAll('.weapon-btn').forEach(b => b.addEventListener('click', () => { ac(); setWeapon(b.dataset.w); }));
         document.querySelectorAll('.skin-btn').forEach(b => b.addEventListener('click', () => { ac(); setSkin(b.dataset.s); }));
+
+        // ---------- Custom control layout: pick up and drag the stick/buttons ----------
+        const layoutBtn = $('layoutBtn'), resetLayoutBtn = $('resetLayoutBtn'), layoutHint = $('layoutHint');
+        const layoutItems = [
+            { key: 'move', el: () => moveJoystickArea },
+            { key: 'fire', el: () => fireBtn },
+            { key: 'jump', el: () => jumpBtn },
+        ];
+        function applyLayout() {
+            for (const { key, el } of layoutItems) {
+                const e = el();
+                const p = settings.pos && settings.pos[key];
+                if (p) {
+                    e.style.left = p.l + '%';
+                    e.style.top = p.t + '%';
+                    e.style.bottom = 'auto';
+                    e.style.right = 'auto';
+                }
+            }
+        }
+        function setLayoutMode(on) {
+            layoutMode = on;
+            layoutBtn.textContent = on ? '✅' : '✋';
+            layoutHint.classList.toggle('show', on);
+            controlsOverlay.classList.toggle('editing', on);
+            if (on) {
+                controlsOverlay.classList.add('active', 'touch');
+                ac();
+            } else if (!hasTouched) {
+                controlsOverlay.classList.remove('touch');
+            }
+        }
+        layoutBtn.addEventListener('click', () => setLayoutMode(!layoutMode));
+        resetLayoutBtn.addEventListener('click', () => {
+            settings.pos = null;
+            for (const { el } of layoutItems) {
+                const e = el();
+                e.style.left = ''; e.style.top = ''; e.style.bottom = ''; e.style.right = '';
+            }
+            saveSettings();
+        });
+        for (const { key, el } of layoutItems) {
+            const e = el();
+            e.addEventListener('pointerdown', (ev) => {
+                if (!layoutMode) return;
+                ev.preventDefault();
+                try { e.setPointerCapture(ev.pointerId); } catch(err) {}
+                const wrap = $('gameWrapper').getBoundingClientRect();
+                const r = e.getBoundingClientRect();
+                const offX = ev.clientX - r.left, offY = ev.clientY - r.top;
+                const move = (ev2) => {
+                    let l = ((ev2.clientX - wrap.left - offX) / wrap.width) * 100;
+                    let t = ((ev2.clientY - wrap.top - offY) / wrap.height) * 100;
+                    l = Math.max(0, Math.min(92, l));
+                    t = Math.max(0, Math.min(90, t));
+                    e.style.left = l + '%';
+                    e.style.top = t + '%';
+                    e.style.bottom = 'auto';
+                    e.style.right = 'auto';
+                    if (!settings.pos) settings.pos = {};
+                    settings.pos[key] = { l: Math.round(l * 10) / 10, t: Math.round(t * 10) / 10 };
+                };
+                const up = () => {
+                    e.removeEventListener('pointermove', move);
+                    e.removeEventListener('pointerup', up);
+                    e.removeEventListener('pointercancel', up);
+                    saveSettings();
+                };
+                e.addEventListener('pointermove', move);
+                e.addEventListener('pointerup', up);
+                e.addEventListener('pointercancel', up);
+            });
+        }
 
         // Menu
         playBtn.addEventListener('click', () => { ac(); hideBot(); startBotMatch(); });
