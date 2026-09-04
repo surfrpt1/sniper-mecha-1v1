@@ -1,12 +1,16 @@
 {
-  "name": "sniper-mecha-1v1",
+  "name": "sniper-mecha-multiplayer",
   "version": "1.0.0",
-  "description": "BGMI WOW mode style sniper mecha 1v1 game",
-  "main": "server.js",
+  "description": "Sniper Mecha 1v1 with online multiplayer lobby",
+  "main": "server.mjs",
+  "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.mjs"
   },
   "dependencies": {
-    "express": "^4.18.2"
+    "socket.io": "^4.7.5"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

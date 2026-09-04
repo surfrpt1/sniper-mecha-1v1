@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Sniper Mecha 1v1 - 3D</title>
+    <title>Sniper Mecha 1v1 - Multiplayer</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-touch-callout: none; touch-action: none; }
         body {
@@ -25,10 +25,11 @@
             display: block;
         }
 
-        /* Menu overlay */
-        #menu {
+        /* Overlays */
+        #menu, #lobby, #gameOverMenu {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -39,15 +40,15 @@
             pointer-events: auto;
             transition: opacity 0.3s;
         }
-        #menu.hidden { opacity: 0; pointer-events: none; }
-        #menu h1 {
+        #menu.hidden, #lobby.hidden, #gameOverMenu.hidden { opacity: 0; pointer-events: none; display: none; }
+        #menu h1, #lobby h1, #gameOverMenu h1 {
             font-size: clamp(2rem, 8vw, 4rem);
             color: #88ccff;
             text-shadow: 0 0 20px #44aaff;
             margin-bottom: 10px;
             letter-spacing: 2px;
         }
-        #menu p {
+        #menu p, #lobby p, #gameOverMenu p {
             color: #8899bb;
             font-size: clamp(0.8rem, 2vw, 1.2rem);
             margin-bottom: 30px;
@@ -72,6 +73,53 @@
         .menu-btn:active { transform: scale(0.97); }
         .menu-btn.disabled { opacity: 0.4; cursor: not-allowed; border-color: #3a3a4a; }
 
+        #lobby .room-list {
+            width: min(90%, 500px);
+            max-height: 40vh;
+            overflow-y: auto;
+            background: rgba(20,20,40,0.6);
+            border-radius: 12px;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #2a2a5a;
+        }
+        .room-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            border-bottom: 1px solid #1a1a3a;
+            color: #aac;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+        .room-item:hover { background: #2a2a5a; }
+        .room-item .name { font-weight: bold; color: #88ccff; }
+        .room-item .players { color: #8899bb; }
+        .room-item .status { font-size: 0.8em; color: #ffcc44; }
+
+        .input-field {
+            background: #1a1a2a;
+            border: 1px solid #3a5a7a;
+            color: #ccddff;
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 1rem;
+            margin: 5px;
+            width: 80%;
+            max-width: 300px;
+            outline: none;
+        }
+        .input-field:focus { border-color: #6a9aff; }
+
+        .lobby-actions {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .lobby-actions .menu-btn { min-width: 120px; font-size: 1rem; padding: 10px 20px; }
+
         /* HUD */
         #hud {
             position: absolute;
@@ -85,6 +133,7 @@
             line-height: 1.6;
         }
         #hud .timer { font-size: clamp(1rem, 3vw, 1.6rem); color: #ffcc44; }
+
         #settingsBtn {
             position: absolute;
             top: 12px; right: 12px;
@@ -107,12 +156,11 @@
         #settingsBtn:hover { background: rgba(30,60,100,0.7); }
         #settingsBtn:active { transform: scale(0.9); }
 
-        /* Settings panel (simplified for 3D) */
         #settingsPanel {
             position: absolute;
             top: 50%; left: 50%;
             transform: translate(-50%, -50%);
-            width: min(90%, 400px);
+            width: min(90%, 350px);
             background: rgba(10,10,30,0.95);
             border: 2px solid #3a5a8a;
             border-radius: 20px;
@@ -133,23 +181,22 @@
             color: #aac;
             font-size: 0.95rem;
         }
-        .setting-row input[type="range"] {
-            width: 60%;
-            accent-color: #44aaff;
-            background: #1a2a3a;
-            height: 4px;
-            border-radius: 4px;
-            -webkit-appearance: none;
-        }
-        .setting-row input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
+        .setting-row button {
+            background: #2a3a5a;
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
-            background: #44aaff;
+            font-size: 1.2rem;
             cursor: pointer;
+            touch-action: manipulation;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
-        .setting-row span { min-width: 30px; text-align: right; color: #88ccff; }
+        .setting-row button:active { transform: scale(0.9); }
+        .setting-row span { min-width: 40px; text-align: center; color: #88ccff; }
         .settings-close-btn {
             background: #2a3a5a;
             border: none;
@@ -161,7 +208,6 @@
             margin-top: 6px;
             touch-action: manipulation;
         }
-        .settings-close-btn:active { transform: scale(0.96); }
         .settings-reset-btn {
             background: #3a2a2a;
             border: none;
@@ -173,40 +219,7 @@
             touch-action: manipulation;
         }
 
-        /* Game Over overlay */
-        #gameOverMenu {
-            position: absolute;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            display: none;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0,0,0,0.75);
-            backdrop-filter: blur(4px);
-            z-index: 25;
-            pointer-events: auto;
-        }
-        #gameOverMenu.show { display: flex; }
-        #gameOverMenu h1 {
-            font-size: clamp(2.5rem, 8vw, 4.5rem);
-            margin-bottom: 10px;
-            text-shadow: 0 0 30px currentColor, 0 0 60px #000;
-            color: #fff;
-        }
-        #gameOverMenu .sub {
-            color: #ddd;
-            font-size: clamp(1rem, 2vw, 1.4rem);
-            margin-bottom: 30px;
-            text-shadow: 0 0 20px #000;
-        }
-        #gameOverMenu .menu-btn {
-            min-width: 160px;
-            font-size: clamp(1rem, 2vw, 1.2rem);
-            padding: 12px 28px;
-        }
-
-        /* Touch controls overlay (keep for mobile) */
+        /* Touch controls */
         #controlsOverlay {
             position: absolute;
             top: 0; left: 0;
@@ -215,7 +228,7 @@
             z-index: 10;
             touch-action: none;
         }
-
+        #controlsOverlay.active { pointer-events: auto; }
         .joystick-area {
             position: absolute;
             width: 30%;
@@ -270,20 +283,34 @@
     </style>
 </head>
 <body>
-
     <div id="gameWrapper">
         <div id="three-canvas"></div>
 
         <!-- Menu -->
         <div id="menu">
-            <h1>🔫 SNIPER MECHA 3D</h1>
-            <p>1v1 · BGMI WOW Style</p>
+            <h1>🔫 SNIPER MECHA</h1>
+            <p>Multiplayer 1v1 · BGMI WOW Style</p>
             <button class="menu-btn" id="playBtn">▶ Play vs Bot</button>
-            <button class="menu-btn disabled" id="multiBtn">🌐 Online (coming soon)</button>
+            <button class="menu-btn" id="multiBtn">🌐 Online Multiplayer</button>
+        </div>
+
+        <!-- Lobby -->
+        <div id="lobby" class="hidden">
+            <h1>🌐 Lobby</h1>
+            <input class="input-field" id="nameInput" placeholder="Your name" value="Player" />
+            <div class="room-list" id="roomList"></div>
+            <div class="lobby-actions">
+                <button class="menu-btn" id="createRoomBtn">➕ Create Room</button>
+                <button class="menu-btn" id="refreshRoomsBtn">🔄 Refresh</button>
+                <button class="menu-btn" id="backToMenuBtn">↩ Back</button>
+            </div>
+            <div style="margin-top:10px;color:#8899bb;font-size:0.9rem;">
+                <span id="lobbyStatus">Select or create a room</span>
+            </div>
         </div>
 
         <!-- Game Over -->
-        <div id="gameOverMenu">
+        <div id="gameOverMenu" class="hidden">
             <h1 id="gameOverTitle">🏆 YOU WIN!</h1>
             <div class="sub" id="gameOverSub">Match over</div>
             <button class="menu-btn" id="gameOverReturnBtn">↩ Return to Menu</button>
@@ -296,39 +323,20 @@
             <div class="timer">⏱ <span id="hudTimer">60</span>s</div>
         </div>
 
-        <!-- Settings Button -->
         <div id="settingsBtn">⚙</div>
         <div id="settingsPanel">
             <h2>⚙ Controls</h2>
             <div class="setting-row">
                 <label>Joystick size</label>
-                <input type="range" id="joySizeSlider" min="15" max="45" value="30" step="1" />
+                <button id="joyDec">−</button>
                 <span id="joySizeVal">30%</span>
+                <button id="joyInc">+</button>
             </div>
             <div class="setting-row">
                 <label>Fire button size</label>
-                <input type="range" id="fireSizeSlider" min="10" max="30" value="18" step="1" />
+                <button id="fireDec">−</button>
                 <span id="fireSizeVal">18%</span>
-            </div>
-            <div class="setting-row">
-                <label>Joystick X offset</label>
-                <input type="range" id="joyXSlider" min="0" max="20" value="5" step="0.5" />
-                <span id="joyXVal">5%</span>
-            </div>
-            <div class="setting-row">
-                <label>Joystick Y offset</label>
-                <input type="range" id="joyYSlider" min="0" max="20" value="8" step="0.5" />
-                <span id="joyYVal">8%</span>
-            </div>
-            <div class="setting-row">
-                <label>Fire X offset</label>
-                <input type="range" id="fireXSlider" min="0" max="20" value="8" step="0.5" />
-                <span id="fireXVal">8%</span>
-            </div>
-            <div class="setting-row">
-                <label>Fire Y offset</label>
-                <input type="range" id="fireYSlider" min="0" max="20" value="10" step="0.5" />
-                <span id="fireYVal">10%</span>
+                <button id="fireInc">+</button>
             </div>
             <button class="settings-reset-btn" id="resetSettingsBtn">↺ Reset to default</button>
             <button class="settings-close-btn" id="settingsCloseBtn">Close</button>
@@ -348,19 +356,32 @@
     <script type="importmap">
         {
             "imports": {
-                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "socket.io-client": "https://cdn.socket.io/4.7.5/socket.io.esm.min.js"
             }
         }
     </script>
 
     <script type="module">
         import * as THREE from 'three';
+        import io from 'socket.io-client';
 
-        // ===== DOM refs =====
+        // DOM refs
         const container = document.getElementById('three-canvas');
         const menu = document.getElementById('menu');
+        const lobby = document.getElementById('lobby');
         const playBtn = document.getElementById('playBtn');
         const multiBtn = document.getElementById('multiBtn');
+        const backToMenuBtn = document.getElementById('backToMenuBtn');
+        const createRoomBtn = document.getElementById('createRoomBtn');
+        const refreshRoomsBtn = document.getElementById('refreshRoomsBtn');
+        const roomList = document.getElementById('roomList');
+        const nameInput = document.getElementById('nameInput');
+        const lobbyStatus = document.getElementById('lobbyStatus');
+        const gameOverMenu = document.getElementById('gameOverMenu');
+        const gameOverTitle = document.getElementById('gameOverTitle');
+        const gameOverSub = document.getElementById('gameOverSub');
+        const gameOverReturnBtn = document.getElementById('gameOverReturnBtn');
         const hudPlayerHP = document.getElementById('hudPlayerHP');
         const hudEnemyHP = document.getElementById('hudEnemyHP');
         const hudTimer = document.getElementById('hudTimer');
@@ -373,35 +394,19 @@
         const settingsPanel = document.getElementById('settingsPanel');
         const settingsCloseBtn = document.getElementById('settingsCloseBtn');
         const resetSettingsBtn = document.getElementById('resetSettingsBtn');
-        const gameOverMenu = document.getElementById('gameOverMenu');
-        const gameOverTitle = document.getElementById('gameOverTitle');
-        const gameOverSub = document.getElementById('gameOverSub');
-        const gameOverReturnBtn = document.getElementById('gameOverReturnBtn');
-
-        // Settings sliders
-        const joySizeSlider = document.getElementById('joySizeSlider');
-        const fireSizeSlider = document.getElementById('fireSizeSlider');
-        const joyXSlider = document.getElementById('joyXSlider');
-        const joyYSlider = document.getElementById('joyYSlider');
-        const fireXSlider = document.getElementById('fireXSlider');
-        const fireYSlider = document.getElementById('fireYSlider');
+        const joyDec = document.getElementById('joyDec');
+        const joyInc = document.getElementById('joyInc');
+        const fireDec = document.getElementById('fireDec');
+        const fireInc = document.getElementById('fireInc');
         const joySizeVal = document.getElementById('joySizeVal');
         const fireSizeVal = document.getElementById('fireSizeVal');
-        const joyXVal = document.getElementById('joyXVal');
-        const joyYVal = document.getElementById('joyYVal');
-        const fireXVal = document.getElementById('fireXVal');
-        const fireYVal = document.getElementById('fireYVal');
 
         // ===== Three.js setup =====
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x0a0a1a);
-
-        // Camera
         const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
         camera.position.set(0, 25, 25);
         camera.lookAt(0, 0, 0);
-
-        // Renderer
         const renderer = new THREE.WebGLRenderer({ antialias: true });
         renderer.setSize(container.clientWidth, container.clientHeight);
         renderer.shadowMap.enabled = true;
@@ -426,24 +431,20 @@
         ground.position.y = -0.5;
         ground.receiveShadow = true;
         scene.add(ground);
-
-        // Grid helper
         const gridHelper = new THREE.GridHelper(40, 20, 0x2a2a5a, 0x1a1a3a);
         gridHelper.position.y = -0.4;
         scene.add(gridHelper);
 
         // ===== Game state =====
-        const STATE = { MENU: 0, COUNTDOWN: 1, PLAYING: 2, GAMEOVER: 3 };
+        const STATE = { MENU: 0, LOBBY: 1, COUNTDOWN: 2, PLAYING: 3, GAMEOVER: 4 };
         let gameState = STATE.MENU;
         let countdown = 3;
         let matchTime = 60;
         let matchTimerInterval = null;
         let gameOverWinner = null;
-
-        // Arena bounds
         const BOUNDS = 18;
 
-        // ===== Players =====
+        // ===== Players (local) =====
         const player = {
             x: -6, z: 0,
             radius: 1.2,
@@ -452,77 +453,38 @@
             maxHealth: 100,
             angle: 0,
             cooldown: 0,
-            shootCooldown: 40,
+            shootCooldown: 400, // ms
             alive: true,
             mesh: null,
-            aimTarget: new THREE.Vector3(0, 0, 1)
+            socketId: null,
+            playerIndex: 0,
+            name: 'Player'
         };
-        const enemy = {
-            x: 6, z: 0,
-            radius: 1.2,
-            speed: 0.04,
-            health: 100,
-            maxHealth: 100,
-            angle: 0,
-            cooldown: 0,
-            shootCooldown: 50,
-            alive: true,
-            state: 'idle',
-            timer: 0,
-            mesh: null
-        };
+        // Remote players: map socketId -> { mesh, x, z, angle, health, alive, name, playerIndex }
+        const remotePlayers = new Map();
 
-        // Bullets
-        let bullets = [];
-        const bulletSpeed = 0.2;
-        const bulletRadius = 0.2;
+        // ===== Bullets (visual only) =====
+        const bulletMeshes = [];
 
-        // Obstacles (3D boxes)
-        const obstacles = [
-            { x: -3, z: -3, w: 2, h: 1.5, d: 2 },
-            { x: 4, z: 2, w: 2, h: 1.5, d: 2 },
-            { x: -5, z: 5, w: 2, h: 1.5, d: 2 },
-            { x: 6, z: -4, w: 2, h: 1.5, d: 2 },
-            { x: 0, z: 0, w: 1.5, h: 1.5, d: 1.5 }
-        ];
-        const obstacleMeshes = [];
-
-        function createObstacles() {
-            for (let o of obstacles) {
-                const geo = new THREE.BoxGeometry(o.w, o.h, o.d);
-                const mat = new THREE.MeshStandardMaterial({ color: 0x2a2a5a, roughness: 0.6, metalness: 0.2 });
-                const mesh = new THREE.Mesh(geo, mat);
-                mesh.position.set(o.x, o.h/2 - 0.5, o.z);
-                mesh.castShadow = true;
-                mesh.receiveShadow = true;
-                scene.add(mesh);
-                obstacleMeshes.push(mesh);
-            }
-        }
-        createObstacles();
-
-        // ===== Create humanoid character =====
-        function createHumanoid(color, isEnemy = false) {
+        // ===== Humanoid creation =====
+        function createHumanoid(color, isLocal = false) {
             const group = new THREE.Group();
-
-            // Body (cylinder)
+            // Body
             const bodyGeo = new THREE.CylinderGeometry(0.7, 0.7, 1.4, 8);
-            const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4, metalness: 0.2 });
+            const bodyMat = new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.2 });
             const body = new THREE.Mesh(bodyGeo, bodyMat);
             body.position.y = 0.7;
             body.castShadow = true;
             group.add(body);
-
-            // Head (sphere)
+            // Head
             const headGeo = new THREE.SphereGeometry(0.5, 8, 8);
             const headMat = new THREE.MeshStandardMaterial({ color: 0xffcc99, roughness: 0.6 });
             const head = new THREE.Mesh(headGeo, headMat);
             head.position.y = 1.6;
             head.castShadow = true;
             group.add(head);
-
-            // Arms (boxes)
-            const armMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 });
+            // Arms
+            const armMat = new THREE.MeshStandardMaterial({ color, roughness: 0.5 });
             const armGeo = new THREE.BoxGeometry(0.2, 1.0, 0.2);
             const armL = new THREE.Mesh(armGeo, armMat);
             armL.position.set(-0.8, 0.9, 0);
@@ -532,7 +494,6 @@
             armR.position.set(0.8, 0.9, 0);
             armR.castShadow = true;
             group.add(armR);
-
             // Legs
             const legMat = new THREE.MeshStandardMaterial({ color: 0x333366, roughness: 0.6 });
             const legGeo = new THREE.BoxGeometry(0.3, 0.8, 0.3);
@@ -544,8 +505,7 @@
             legR.position.set(0.3, 0.1, 0);
             legR.castShadow = true;
             group.add(legR);
-
-            // Sniper rifle (for right arm)
+            // Sniper rifle
             const gunMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.7 });
             const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.15, 0.15), gunMat);
             gunBody.position.set(0.7, 0.2, 0.6);
@@ -554,27 +514,19 @@
             gunBarrel.rotation.x = Math.PI/2;
             gunBarrel.position.set(0.7, 0.2, 1.0);
             group.add(gunBarrel);
-
-            // Scope
             const scopeMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xffaa00, emissiveIntensity: 0.3 });
             const scope = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), scopeMat);
             scope.position.set(0.7, 0.35, 0.8);
             group.add(scope);
-
             group.scale.set(0.6, 0.6, 0.6);
             return group;
         }
 
-        // Create player and enemy meshes
-        const playerGroup = createHumanoid(0x44aaff);
+        // Create local player mesh
+        const playerGroup = createHumanoid(0x44aaff, true);
         playerGroup.position.set(player.x, -0.5, player.z);
         scene.add(playerGroup);
         player.mesh = playerGroup;
-
-        const enemyGroup = createHumanoid(0xff6644, true);
-        enemyGroup.position.set(enemy.x, -0.5, enemy.z);
-        scene.add(enemyGroup);
-        enemy.mesh = enemyGroup;
 
         // ===== Input =====
         const keys = { w: false, a: false, s: false, d: false };
@@ -585,11 +537,7 @@
         let touchFire = false;
 
         // ===== Settings =====
-        const defaultSettings = {
-            joySize: 30, fireSize: 18,
-            joyX: 5, joyY: 8,
-            fireX: 8, fireY: 10
-        };
+        const defaultSettings = { joySize: 30, fireSize: 18 };
         let settings = { ...defaultSettings };
 
         function loadSettings() {
@@ -608,28 +556,14 @@
             localStorage.setItem('sniperMechaSettings', JSON.stringify(settings));
         }
         function applySettingsUI() {
-            joySizeSlider.value = settings.joySize;
-            fireSizeSlider.value = settings.fireSize;
-            joyXSlider.value = settings.joyX;
-            joyYSlider.value = settings.joyY;
-            fireXSlider.value = settings.fireX;
-            fireYSlider.value = settings.fireY;
             joySizeVal.textContent = settings.joySize + '%';
             fireSizeVal.textContent = settings.fireSize + '%';
-            joyXVal.textContent = settings.joyX + '%';
-            joyYVal.textContent = settings.joyY + '%';
-            fireXVal.textContent = settings.fireX + '%';
-            fireYVal.textContent = settings.fireY + '%';
         }
         function applySettingsToControls() {
             moveJoystickArea.style.width = settings.joySize + '%';
             moveJoystickArea.style.aspectRatio = '1/1';
-            moveJoystickArea.style.bottom = settings.joyY + '%';
-            moveJoystickArea.style.left = settings.joyX + '%';
             fireBtn.style.width = settings.fireSize + '%';
             fireBtn.style.aspectRatio = '1/1';
-            fireBtn.style.bottom = settings.fireY + '%';
-            fireBtn.style.right = settings.fireX + '%';
         }
         function resetSettingsToDefault() {
             settings = { ...defaultSettings };
@@ -638,116 +572,272 @@
             applySettingsToControls();
         }
 
-        // ===== Helpers =====
-        function dist(x1, z1, x2, z2) {
-            return Math.hypot(x2 - x1, z2 - z1);
-        }
+        // ===== Socket =====
+        let socket = null;
+        let currentRoom = null;
+        let isHost = false;
+        let roomState = 'waiting'; // waiting, countdown, playing, ended
+        let localPlayerIndex = 0;
+        let remotePlayersData = {}; // id -> { x, z, angle, health, alive, name }
 
-        function collidesWithObstacles(x, z, r) {
-            for (let o of obstacles) {
-                const halfW = o.w/2, halfD = o.d/2;
-                const closestX = Math.max(o.x - halfW, Math.min(x, o.x + halfW));
-                const closestZ = Math.max(o.z - halfD, Math.min(z, o.z + halfD));
-                if (dist(x, z, closestX, closestZ) < r) return true;
-            }
-            return false;
-        }
-
-        function movePlayer(p, dx, dz) {
-            let nx = p.x + dx;
-            let nz = p.z + dz;
-            if (nx < -BOUNDS) nx = -BOUNDS;
-            if (nx > BOUNDS) nx = BOUNDS;
-            if (nz < -BOUNDS) nz = -BOUNDS;
-            if (nz > BOUNDS) nz = BOUNDS;
-            if (!collidesWithObstacles(nx, nz, p.radius)) {
-                p.x = nx;
-                p.z = nz;
-            } else {
-                if (!collidesWithObstacles(nx, p.z, p.radius)) {
-                    p.x = nx;
-                } else if (!collidesWithObstacles(p.x, nz, p.radius)) {
-                    p.z = nz;
-                }
-            }
-            // Update mesh position
-            if (p.mesh) {
-                p.mesh.position.x = p.x;
-                p.mesh.position.z = p.z;
-                // Rotate to face angle
-                p.mesh.rotation.y = p.angle;
-            }
-        }
-
-        function shoot(shooter, targetX, targetZ, isEnemy = false) {
-            if (shooter.cooldown > 0) return;
-            const angle = Math.atan2(targetZ - shooter.z, targetX - shooter.x);
-            const speed = bulletSpeed;
-            const b = {
-                x: shooter.x + Math.cos(angle) * (shooter.radius + 0.5),
-                z: shooter.z + Math.sin(angle) * (shooter.radius + 0.5),
-                vx: Math.cos(angle) * speed,
-                vz: Math.sin(angle) * speed,
-                radius: bulletRadius,
-                isEnemy: isEnemy,
-                alive: true,
-                mesh: null
-            };
-            // Create visual sphere
-            const geo = new THREE.SphereGeometry(bulletRadius, 6, 6);
-            const mat = new THREE.MeshStandardMaterial({
-                color: isEnemy ? 0xff6666 : 0x66ff66,
-                emissive: isEnemy ? 0xff0000 : 0x00ff00,
-                emissiveIntensity: 0.5
+        function connectSocket() {
+            if (socket) return;
+            // Use same origin if served by server.mjs, else fallback
+            const url = window.location.origin;
+            socket = io(url, { path: '/socket.io' });
+            socket.on('connect', () => {
+                console.log('Socket connected', socket.id);
+                lobbyStatus.textContent = 'Connected.';
+                socket.emit('list-rooms', (rooms) => {
+                    renderRoomList(rooms);
+                });
             });
-            const mesh = new THREE.Mesh(geo, mat);
-            mesh.position.set(b.x, 0.2, b.z);
-            mesh.castShadow = true;
-            scene.add(mesh);
-            b.mesh = mesh;
-            bullets.push(b);
-            shooter.cooldown = shooter.shootCooldown;
-        }
-
-        // ===== AI =====
-        function updateAI() {
-            if (!enemy.alive) return;
-            enemy.angle = Math.atan2(player.z - enemy.z, player.x - enemy.x);
-            const distToPlayer = dist(enemy.x, enemy.z, player.x, player.z);
-            if (distToPlayer > 10) enemy.state = 'chase';
-            else if (distToPlayer < 4) enemy.state = 'retreat';
-            else enemy.state = 'idle';
-
-            let dx = 0, dz = 0;
-            if (enemy.state === 'chase') {
-                dx = Math.cos(enemy.angle) * enemy.speed;
-                dz = Math.sin(enemy.angle) * enemy.speed;
-            } else if (enemy.state === 'retreat') {
-                dx = -Math.cos(enemy.angle) * enemy.speed * 0.7;
-                dz = -Math.sin(enemy.angle) * enemy.speed * 0.7;
-            } else {
-                if (enemy.timer % 120 < 60) {
-                    dx = Math.cos(enemy.angle + Math.PI/2) * 0.5;
-                    dz = Math.sin(enemy.angle + Math.PI/2) * 0.5;
-                } else {
-                    dx = Math.cos(enemy.angle - Math.PI/2) * 0.5;
-                    dz = Math.sin(enemy.angle - Math.PI/2) * 0.5;
+            socket.on('disconnect', () => {
+                console.log('Socket disconnected');
+                lobbyStatus.textContent = 'Disconnected. Refresh.';
+            });
+            socket.on('room-players', (data) => {
+                // data: { players: [{id, playerIndex, name, isHost}], host, gameState, gameDuration, killLimit }
+                renderRoomListForCurrentRoom(data);
+                // Update host status
+                isHost = data.host === socket.id;
+                roomState = data.gameState;
+                // Update remote players list
+                const newRemote = new Map();
+                for (const p of data.players) {
+                    if (p.id !== socket.id) {
+                        newRemote.set(p.id, { name: p.name, playerIndex: p.playerIndex, isHost: p.isHost });
+                    }
                 }
-            }
-            movePlayer(enemy, dx, dz);
-            if (distToPlayer < 12 && Math.abs(Math.atan2(player.z - enemy.z, player.x - enemy.x) - enemy.angle) < 0.2) {
-                shoot(enemy, player.x, player.z, true);
-            }
-            enemy.timer++;
+                // Remove old remote meshes
+                for (const [id, mesh] of remotePlayers) {
+                    if (!newRemote.has(id)) {
+                        scene.remove(mesh);
+                        remotePlayers.delete(id);
+                    }
+                }
+                // Add new remote meshes
+                for (const [id, info] of newRemote) {
+                    if (!remotePlayers.has(id)) {
+                        const color = 0xff6644; // enemy red
+                        const mesh = createHumanoid(color, false);
+                        mesh.position.set(0, -0.5, 0);
+                        scene.add(mesh);
+                        remotePlayers.set(id, { mesh, ...info, x:0, z:0, angle:0, health:100, alive:true });
+                    }
+                }
+            });
+            socket.on('world-update', (data) => {
+                // data: { players: [{id, playerIndex, name, x, y, angle, facingRight}], bullets, hp, scores }
+                // Update remote player positions
+                for (const p of data.players) {
+                    if (p.id === socket.id) continue;
+                    const remote = remotePlayers.get(p.id);
+                    if (remote) {
+                        remote.x = p.x;
+                        remote.z = p.y; // y->z
+                        remote.angle = p.angle;
+                        remote.mesh.position.set(p.x, -0.5, p.y);
+                        remote.mesh.rotation.y = p.angle;
+                        // Update health display?
+                    }
+                }
+                // Update bullets (visual only)
+                // We'll just spawn a simple sphere for each bullet from server
+                // For simplicity, we clear and recreate
+                for (const m of bulletMeshes) scene.remove(m);
+                bulletMeshes.length = 0;
+                const bulletMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0xff6600, emissiveIntensity: 0.5 });
+                for (const b of data.bullets) {
+                    const geo = new THREE.SphereGeometry(0.2, 6, 6);
+                    const mesh = new THREE.Mesh(geo, bulletMat);
+                    mesh.position.set(b.x, 0.2, b.y);
+                    scene.add(mesh);
+                    bulletMeshes.push(mesh);
+                }
+                // Update HP
+                for (const hp of data.hp) {
+                    if (hp.id === socket.id) {
+                        player.health = hp.hp;
+                        player.alive = hp.alive;
+                        hudPlayerHP.textContent = Math.ceil(hp.hp);
+                    } else {
+                        const remote = remotePlayers.get(hp.id);
+                        if (remote) {
+                            remote.health = hp.hp;
+                            remote.alive = hp.alive;
+                            // Update enemy HP display (if it's the first remote? For simplicity, show first remote's HP as enemy)
+                            // We'll just show the first remote's health in HUD
+                            const enemyRemote = [...remotePlayers.values()][0];
+                            if (enemyRemote) {
+                                hudEnemyHP.textContent = Math.ceil(enemyRemote.health);
+                            }
+                        }
+                    }
+                }
+                // Update scores? Not shown in HUD for now.
+            });
+            socket.on('match-joined', (data) => {
+                // data: { room, playerIndex, name, world, scores, hp, killLimit, host, gameState, gameDuration }
+                console.log('Joined match', data);
+                currentRoom = data.room;
+                localPlayerIndex = data.playerIndex;
+                player.name = data.name;
+                isHost = data.host === socket.id;
+                roomState = data.gameState;
+                // Initialize remote players from world
+                for (const w of data.world) {
+                    // world contains other players' state
+                    if (!remotePlayers.has(w.id)) {
+                        const color = 0xff6644;
+                        const mesh = createHumanoid(color, false);
+                        mesh.position.set(w.x, -0.5, w.y);
+                        scene.add(mesh);
+                        remotePlayers.set(w.id, { mesh, name: w.name, playerIndex: w.playerIndex, x: w.x, z: w.y, angle: w.angle, health: 100, alive: true });
+                    }
+                }
+                // HP
+                for (const hp of data.hp) {
+                    if (hp.id === socket.id) {
+                        player.health = hp.hp;
+                        player.alive = hp.alive;
+                        hudPlayerHP.textContent = Math.ceil(hp.hp);
+                    } else {
+                        const remote = remotePlayers.get(hp.id);
+                        if (remote) {
+                            remote.health = hp.hp;
+                            remote.alive = hp.alive;
+                        }
+                    }
+                }
+                // If game is already playing, switch to playing state
+                if (data.gameState === 'playing') {
+                    startMatch(data.gameDuration);
+                } else if (data.gameState === 'countdown') {
+                    // We'll get countdown events separately
+                } else if (data.gameState === 'waiting') {
+                    // Show lobby
+                }
+                // Show lobby/hide menu
+                lobby.classList.add('hidden');
+                menu.classList.add('hidden');
+                // Show HUD and controls
+                controlsOverlay.classList.add('active');
+                // Start game loop
+                gameState = STATE.PLAYING; // temporary
+            });
+            socket.on('countdown', (data) => {
+                // data: { seconds }
+                if (data.seconds > 0) {
+                    countdown = data.seconds;
+                    gameState = STATE.COUNTDOWN;
+                } else {
+                    // Game start
+                    gameState = STATE.PLAYING;
+                    // Start timer
+                    // We'll get game-start event
+                }
+            });
+            socket.on('game-start', (data) => {
+                // data: { gameDuration, killLimit, startTime }
+                startMatch(data.gameDuration);
+            });
+            socket.on('match-end', (data) => {
+                // data: { winnerId, scores, rankings, gameDuration }
+                gameState = STATE.GAMEOVER;
+                controlsOverlay.classList.remove('active');
+                showGameOver(data);
+            });
+            socket.on('player-left', (id) => {
+                const remote = remotePlayers.get(id);
+                if (remote) {
+                    scene.remove(remote.mesh);
+                    remotePlayers.delete(id);
+                }
+            });
+            socket.on('fx-shot', (data) => {
+                // data: { id, x, y, angle }
+                // Visual effect: spawn a small flash
+                const geo = new THREE.SphereGeometry(0.3, 6, 6);
+                const mat = new THREE.MeshStandardMaterial({ color: 0xffff00, emissive: 0xffaa00, emissiveIntensity: 1 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(data.x, 0.2, data.y);
+                scene.add(mesh);
+                setTimeout(() => { scene.remove(mesh); }, 200);
+            });
         }
 
-        // ===== Update =====
+        function renderRoomList(rooms) {
+            roomList.innerHTML = '';
+            if (rooms.length === 0) {
+                const div = document.createElement('div');
+                div.textContent = 'No rooms. Create one!';
+                div.style.color = '#8899bb';
+                div.style.padding = '12px';
+                roomList.appendChild(div);
+                return;
+            }
+            for (const r of rooms) {
+                const div = document.createElement('div');
+                div.className = 'room-item';
+                div.innerHTML = `
+                    <span class="name">${r.name}</span>
+                    <span class="players">${r.players}/6</span>
+                    <span class="status">${r.gameState === 'playing' ? '🔴 Playing' : r.gameState === 'countdown' ? '⏳ Starting' : '🟢 Waiting'}</span>
+                `;
+                div.addEventListener('click', () => {
+                    joinRoom(r.name);
+                });
+                roomList.appendChild(div);
+            }
+        }
+
+        function renderRoomListForCurrentRoom(data) {
+            // Not used for listing, but we could update the room list item if needed
+        }
+
+        function joinRoom(name) {
+            if (!socket) return;
+            socket.emit('join-room', name, (res) => {
+                if (res && res.ok) {
+                    lobbyStatus.textContent = `Joined room: ${res.room}`;
+                    // The match-joined event will handle the rest
+                } else {
+                    lobbyStatus.textContent = 'Failed to join room.';
+                }
+            });
+        }
+
+        function startMatch(duration) {
+            matchTime = duration || 600;
+            gameState = STATE.PLAYING;
+            // Start timer countdown
+            if (matchTimerInterval) clearInterval(matchTimerInterval);
+            matchTimerInterval = setInterval(() => {
+                matchTime--;
+                hudTimer.textContent = Math.ceil(matchTime);
+                if (matchTime <= 0) {
+                    clearInterval(matchTimerInterval);
+                    // Match end will be triggered by server
+                }
+            }, 1000);
+        }
+
+        function showGameOver(data) {
+            // data: { winnerId, scores, rankings, gameDuration }
+            const winner = data.rankings && data.rankings.length > 0 ? data.rankings[0] : null;
+            const isWinner = winner && winner.id === socket.id;
+            gameOverTitle.textContent = isWinner ? '🏆 YOU WIN!' : '💀 YOU LOSE';
+            gameOverTitle.style.color = isWinner ? '#44ff44' : '#ff4444';
+            gameOverSub.textContent = `Score: ${winner ? winner.kills : 0} kills`;
+            gameOverMenu.classList.remove('hidden');
+        }
+
+        // ===== Game loop update =====
         function update() {
             if (gameState !== STATE.PLAYING) return;
 
-            if (player.cooldown > 0) player.cooldown--;
-            if (enemy.cooldown > 0) enemy.cooldown--;
-
+            // Movement
             let dx = 0, dz = 0;
             if (keys.w) dz -= player.speed;
             if (keys.s) dz += player.speed;
@@ -767,19 +857,16 @@
                 const len = Math.hypot(dx, dz);
                 dx = dx / len * Math.min(len, player.speed);
                 dz = dz / len * Math.min(len, player.speed);
-                movePlayer(player, dx, dz);
+                player.x += dx;
+                player.z += dz;
+                // Clamp
+                player.x = Math.max(-BOUNDS, Math.min(BOUNDS, player.x));
+                player.z = Math.max(-BOUNDS, Math.min(BOUNDS, player.z));
+                player.mesh.position.set(player.x, -0.5, player.z);
             }
 
-            // Aim: map mouse to ground plane (z=0)
-            if (touchFire) {
-                const targetX = enemy.alive ? enemy.x : player.x + 1;
-                const targetZ = enemy.alive ? enemy.z : player.z;
-                player.angle = Math.atan2(targetZ - player.z, targetX - player.x);
-                if (player.alive) {
-                    shoot(player, targetX, targetZ, false);
-                }
-            } else {
-                // Mouse aim: project mouse to ground plane
+            // Aim: mouse to ground
+            if (!touchFire) {
                 const rect = renderer.domElement.getBoundingClientRect();
                 const ndcX = ((mouseX - rect.left) / rect.width) * 2 - 1;
                 const ndcY = -((mouseY - rect.top) / rect.height) * 2 + 1;
@@ -788,204 +875,72 @@
                 const dir = vector.sub(camera.position).normalize();
                 const distance = -camera.position.y / dir.y;
                 const pos = camera.position.clone().add(dir.multiplyScalar(distance));
-                const aimX = pos.x;
-                const aimZ = pos.z;
-                player.angle = Math.atan2(aimZ - player.z, aimX - player.x);
-                // Mouse shooting: if mouseDown, shoot at aim point
-                if (mouseDown && player.alive) {
-                    shoot(player, aimX, aimZ, false);
+                player.angle = Math.atan2(pos.z - player.z, pos.x - player.x);
+                player.mesh.rotation.y = player.angle;
+            }
+
+            // Shooting
+            const now = Date.now();
+            if (touchFire && player.alive) {
+                // Auto-aim at nearest remote player
+                let target = null;
+                let minDist = Infinity;
+                for (const [id, remote] of remotePlayers) {
+                    if (!remote.alive) continue;
+                    const d = Math.hypot(remote.x - player.x, remote.z - player.z);
+                    if (d < minDist) { minDist = d; target = remote; }
+                }
+                if (target) {
+                    player.angle = Math.atan2(target.z - player.z, target.x - player.x);
+                    player.mesh.rotation.y = player.angle;
+                    if (now - player.cooldown > player.shootCooldown) {
+                        // Send fire event
+                        socket.emit('player-fire', {
+                            x: player.x,
+                            y: player.z,
+                            angle: player.angle,
+                            weapon: 'SCRAP_RIFLE'
+                        });
+                        player.cooldown = now;
+                        // Visual feedback: flash
+                    }
                 }
             }
 
-            updateAI();
-
-            // Update bullets
-            for (let b of bullets) {
-                if (!b.alive) continue;
-                b.x += b.vx;
-                b.z += b.vz;
-                if (b.mesh) {
-                    b.mesh.position.x = b.x;
-                    b.mesh.position.z = b.z;
-                }
-                if (b.x < -BOUNDS || b.x > BOUNDS || b.z < -BOUNDS || b.z > BOUNDS) {
-                    b.alive = false;
-                    if (b.mesh) { scene.remove(b.mesh); b.mesh = null; }
-                    continue;
-                }
-                let hitObstacle = false;
-                for (let o of obstacles) {
-                    const halfW = o.w/2, halfD = o.d/2;
-                    if (b.x >= o.x - halfW && b.x <= o.x + halfW &&
-                        b.z >= o.z - halfD && b.z <= o.z + halfD) {
-                        hitObstacle = true;
-                        break;
-                    }
-                }
-                if (hitObstacle) {
-                    b.alive = false;
-                    if (b.mesh) { scene.remove(b.mesh); b.mesh = null; }
-                    continue;
-                }
-                if (!b.isEnemy && b.alive && enemy.alive) {
-                    if (dist(b.x, b.z, enemy.x, enemy.z) < enemy.radius + b.radius) {
-                        enemy.health -= 35;
-                        b.alive = false;
-                        if (b.mesh) { scene.remove(b.mesh); b.mesh = null; }
-                        if (enemy.health <= 0) { enemy.health = 0; enemy.alive = false; }
-                        continue;
-                    }
-                }
-                if (b.isEnemy && b.alive && player.alive) {
-                    if (dist(b.x, b.z, player.x, player.z) < player.radius + b.radius) {
-                        player.health -= 35;
-                        b.alive = false;
-                        if (b.mesh) { scene.remove(b.mesh); b.mesh = null; }
-                        if (player.health <= 0) { player.health = 0; player.alive = false; }
-                        continue;
-                    }
-                }
+            // Send state to server
+            if (socket && gameState === STATE.PLAYING) {
+                socket.emit('player-state', {
+                    x: player.x,
+                    y: player.z,
+                    angle: player.angle,
+                    facingRight: true,
+                });
             }
-            // Clean dead bullets
-            bullets = bullets.filter(b => b.alive);
 
             // Update HUD
             hudPlayerHP.textContent = Math.ceil(player.health);
-            hudEnemyHP.textContent = Math.ceil(enemy.health);
-            hudTimer.textContent = Math.ceil(matchTime);
-
-            // Check win/lose
-            if (!player.alive || !enemy.alive || matchTime <= 0) {
-                gameState = STATE.GAMEOVER;
-                clearInterval(matchTimerInterval);
-                if (matchTime <= 0 && player.alive && enemy.alive) {
-                    gameOverWinner = 'timeout';
-                } else if (!player.alive) {
-                    gameOverWinner = 'enemy';
-                } else if (!enemy.alive) {
-                    gameOverWinner = 'player';
-                } else {
-                    gameOverWinner = 'draw';
-                }
-                showGameOver();
-            }
+            // Enemy HP is updated via server events
         }
 
-        // ===== Game Over =====
-        function showGameOver() {
-            gameOverMenu.classList.add('show');
-            controlsOverlay.classList.remove('active');
-            let title = '', sub = '', color = '#fff';
-            if (gameOverWinner === 'player') {
-                title = '🏆 YOU WIN!';
-                sub = 'You eliminated the enemy!';
-                color = '#44ff44';
-            } else if (gameOverWinner === 'enemy') {
-                title = '💀 YOU LOSE';
-                sub = 'Enemy eliminated you.';
-                color = '#ff4444';
-            } else if (gameOverWinner === 'timeout') {
-                if (player.health > enemy.health) {
-                    title = '🏆 YOU WIN!';
-                    sub = 'More health when time ran out.';
-                    color = '#44ff44';
-                } else if (enemy.health > player.health) {
-                    title = '💀 YOU LOSE';
-                    sub = 'Enemy had more health.';
-                    color = '#ff4444';
-                } else {
-                    title = '🤝 DRAW';
-                    sub = 'Equal health at time end.';
-                    color = '#ffcc44';
-                }
+        // ===== Animation loop =====
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            // Camera follows player
+            if (gameState === STATE.PLAYING || gameState === STATE.COUNTDOWN) {
+                const targetX = player.x;
+                const targetZ = player.z;
+                camera.position.x = targetX;
+                camera.position.z = targetZ + 20;
+                camera.position.y = 15;
+                camera.lookAt(targetX, 0, targetZ);
             } else {
-                title = '🤝 DRAW';
-                sub = 'Match ended.';
-                color = '#ffcc44';
+                camera.position.set(0, 25, 25);
+                camera.lookAt(0, 0, 0);
             }
-            gameOverTitle.textContent = title;
-            gameOverTitle.style.color = color;
-            gameOverSub.textContent = sub;
+            renderer.render(scene, camera);
         }
-
-        function hideGameOver() {
-            gameOverMenu.classList.remove('show');
-        }
-
-        function resetToMenu() {
-            hideGameOver();
-            gameState = STATE.MENU;
-            menu.classList.remove('hidden');
-            controlsOverlay.classList.remove('active');
-            clearInterval(matchTimerInterval);
-            player.health = player.maxHealth;
-            player.alive = true;
-            player.x = -6; player.z = 0;
-            enemy.health = enemy.maxHealth;
-            enemy.alive = true;
-            enemy.x = 6; enemy.z = 0;
-            // Clear bullets
-            for (let b of bullets) {
-                if (b.mesh) scene.remove(b.mesh);
-            }
-            bullets = [];
-            matchTime = 60;
-            hudTimer.textContent = '60';
-            hudPlayerHP.textContent = '100';
-            hudEnemyHP.textContent = '100';
-            mouseDown = false;
-            touchFire = false;
-            joystickActive = false;
-            joystickDX = 0; joystickDY = 0;
-            moveJoystickThumb.style.transform = 'translate(-50%, -50%)';
-            // Update meshes
-            player.mesh.position.set(player.x, -0.5, player.z);
-            enemy.mesh.position.set(enemy.x, -0.5, enemy.z);
-        }
-
-        function startGame() {
-            menu.classList.add('hidden');
-            controlsOverlay.classList.add('active');
-            hideGameOver();
-            player.health = player.maxHealth;
-            player.alive = true;
-            player.x = -6; player.z = 0;
-            enemy.health = enemy.maxHealth;
-            enemy.alive = true;
-            enemy.x = 6; enemy.z = 0;
-            for (let b of bullets) {
-                if (b.mesh) scene.remove(b.mesh);
-            }
-            bullets = [];
-            matchTime = 60;
-            hudTimer.textContent = '60';
-            hudPlayerHP.textContent = '100';
-            hudEnemyHP.textContent = '100';
-            mouseDown = false;
-            touchFire = false;
-            joystickActive = false;
-            joystickDX = 0; joystickDY = 0;
-            moveJoystickThumb.style.transform = 'translate(-50%, -50%)';
-            player.mesh.position.set(player.x, -0.5, player.z);
-            enemy.mesh.position.set(enemy.x, -0.5, enemy.z);
-
-            gameState = STATE.COUNTDOWN;
-            countdown = 3;
-            const interval = setInterval(() => {
-                countdown--;
-                if (countdown < 0) {
-                    clearInterval(interval);
-                    gameState = STATE.PLAYING;
-                    matchTimerInterval = setInterval(() => {
-                        matchTime--;
-                        if (matchTime <= 0) {
-                            matchTime = 0;
-                            // game over triggered in update
-                        }
-                    }, 1000);
-                }
-            }, 1000);
-        }
+        animate();
 
         // ===== Event Listeners =====
 
@@ -1013,18 +968,37 @@
         renderer.domElement.addEventListener('mousedown', (e) => {
             if (e.button === 0) {
                 mouseDown = true;
+                // For desktop, we can also fire a shot on click
+                if (gameState === STATE.PLAYING && player.alive) {
+                    // Fire at mouse aim point
+                    const rect = renderer.domElement.getBoundingClientRect();
+                    const ndcX = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                    const ndcY = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+                    const vector = new THREE.Vector3(ndcX, ndcY, 0.5);
+                    vector.unproject(camera);
+                    const dir = vector.sub(camera.position).normalize();
+                    const distance = -camera.position.y / dir.y;
+                    const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+                    player.angle = Math.atan2(pos.z - player.z, pos.x - player.x);
+                    player.mesh.rotation.y = player.angle;
+                    // Send fire
+                    if (Date.now() - player.cooldown > player.shootCooldown) {
+                        socket.emit('player-fire', {
+                            x: player.x,
+                            y: player.z,
+                            angle: player.angle,
+                            weapon: 'SCRAP_RIFLE'
+                        });
+                        player.cooldown = Date.now();
+                    }
+                }
                 e.preventDefault();
             }
         });
         renderer.domElement.addEventListener('mouseup', (e) => {
-            if (e.button === 0) {
-                mouseDown = false;
-                e.preventDefault();
-            }
+            if (e.button === 0) mouseDown = false;
         });
-        renderer.domElement.addEventListener('mouseleave', () => {
-            mouseDown = false;
-        });
+        renderer.domElement.addEventListener('mouseleave', () => { mouseDown = false; });
         renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
         // Touch joystick
@@ -1090,23 +1064,15 @@
         fireBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
             touchFire = true;
-            if (enemy.alive) {
-                player.angle = Math.atan2(enemy.z - player.z, enemy.x - player.x);
-            }
         });
         fireBtn.addEventListener('touchend', (e) => {
             e.preventDefault();
             touchFire = false;
         });
-        fireBtn.addEventListener('touchcancel', (e) => {
-            touchFire = false;
-        });
+        fireBtn.addEventListener('touchcancel', (e) => { touchFire = false; });
         fireBtn.addEventListener('mousedown', (e) => {
             e.preventDefault();
             touchFire = true;
-            if (enemy.alive) {
-                player.angle = Math.atan2(enemy.z - player.z, enemy.x - player.x);
-            }
         });
         fireBtn.addEventListener('mouseup', (e) => {
             e.preventDefault();
@@ -1134,53 +1100,84 @@
             resetSettingsToDefault();
         });
 
-        // Sliders
-        function updateSettingFromSlider(slider, key, displayEl) {
-            const val = parseFloat(slider.value);
-            settings[key] = val;
-            displayEl.textContent = val + '%';
+        // Size buttons
+        function updateSetting(key, delta, displayEl) {
+            const newVal = Math.max(10, Math.min(50, settings[key] + delta));
+            settings[key] = newVal;
+            displayEl.textContent = newVal + '%';
             saveSettings();
             applySettingsToControls();
         }
-        joySizeSlider.addEventListener('input', () => updateSettingFromSlider(joySizeSlider, 'joySize', joySizeVal));
-        fireSizeSlider.addEventListener('input', () => updateSettingFromSlider(fireSizeSlider, 'fireSize', fireSizeVal));
-        joyXSlider.addEventListener('input', () => updateSettingFromSlider(joyXSlider, 'joyX', joyXVal));
-        joyYSlider.addEventListener('input', () => updateSettingFromSlider(joyYSlider, 'joyY', joyYVal));
-        fireXSlider.addEventListener('input', () => updateSettingFromSlider(fireXSlider, 'fireX', fireXVal));
-        fireYSlider.addEventListener('input', () => updateSettingFromSlider(fireYSlider, 'fireY', fireYVal));
+        joyDec.addEventListener('click', () => updateSetting('joySize', -2, joySizeVal));
+        joyInc.addEventListener('click', () => updateSetting('joySize', 2, joySizeVal));
+        fireDec.addEventListener('click', () => updateSetting('fireSize', -2, fireSizeVal));
+        fireInc.addEventListener('click', () => updateSetting('fireSize', 2, fireSizeVal));
 
         // Menu buttons
-        playBtn.addEventListener('click', startGame);
-        playBtn.addEventListener('touchend', (e) => { e.preventDefault(); startGame(); });
-        multiBtn.addEventListener('click', () => {});
-        multiBtn.addEventListener('touchend', (e) => { e.preventDefault(); });
+        playBtn.addEventListener('click', () => {
+            // Local vs bot - we'll keep the existing bot mode from phase 2
+            // For now, just alert
+            alert('Bot mode coming soon. Use Online Multiplayer.');
+        });
+        multiBtn.addEventListener('click', () => {
+            menu.classList.add('hidden');
+            lobby.classList.remove('hidden');
+            connectSocket();
+            socket.emit('list-rooms', (rooms) => {
+                renderRoomList(rooms);
+            });
+        });
+        backToMenuBtn.addEventListener('click', () => {
+            lobby.classList.add('hidden');
+            menu.classList.remove('hidden');
+            if (socket) {
+                socket.emit('leave-room');
+                socket.disconnect();
+                socket = null;
+            }
+            // Clear remote players
+            for (const [id, remote] of remotePlayers) {
+                scene.remove(remote.mesh);
+            }
+            remotePlayers.clear();
+        });
+        createRoomBtn.addEventListener('click', () => {
+            const name = nameInput.value.trim() || 'Player';
+            socket.emit('set-name', name);
+            const roomName = 'room_' + Math.random().toString(36).substr(2, 6);
+            socket.emit('join-room', roomName, (res) => {
+                if (res && res.ok) {
+                    lobbyStatus.textContent = `Created room: ${roomName}`;
+                } else {
+                    lobbyStatus.textContent = 'Failed to create room.';
+                }
+            });
+        });
+        refreshRoomsBtn.addEventListener('click', () => {
+            socket.emit('list-rooms', (rooms) => {
+                renderRoomList(rooms);
+            });
+        });
 
         // Game Over return
-        gameOverReturnBtn.addEventListener('click', resetToMenu);
-        gameOverReturnBtn.addEventListener('touchend', (e) => { e.preventDefault(); resetToMenu(); });
-
-        // ===== Animation loop =====
-        function animate() {
-            requestAnimationFrame(animate);
-            update();
-            // Update camera to follow player (third-person top-down)
-            if (gameState === STATE.PLAYING || gameState === STATE.COUNTDOWN) {
-                const targetX = player.x;
-                const targetZ = player.z;
-                camera.position.x = targetX;
-                camera.position.z = targetZ + 20;
-                camera.position.y = 15;
-                camera.lookAt(targetX, 0, targetZ);
-            } else {
-                // Default camera when not playing
-                camera.position.set(0, 25, 25);
-                camera.lookAt(0, 0, 0);
+        gameOverReturnBtn.addEventListener('click', () => {
+            gameOverMenu.classList.add('hidden');
+            menu.classList.remove('hidden');
+            if (socket) {
+                socket.emit('leave-room');
+                socket.disconnect();
+                socket = null;
             }
-            renderer.render(scene, camera);
-        }
-        animate();
+            // Reset
+            for (const [id, remote] of remotePlayers) {
+                scene.remove(remote.mesh);
+            }
+            remotePlayers.clear();
+            controlsOverlay.classList.remove('active');
+            gameState = STATE.MENU;
+        });
 
-        // Handle resize
+        // Resize
         function resize() {
             const width = container.clientWidth;
             const height = container.clientHeight;
@@ -1192,10 +1189,13 @@
 
         // ===== Init =====
         loadSettings();
-        resetToMenu();
+        menu.classList.remove('hidden');
+        lobby.classList.add('hidden');
+        gameOverMenu.classList.add('hidden');
+        controlsOverlay.classList.remove('active');
+        gameState = STATE.MENU;
 
-        // Expose for debugging
-        console.log('Sniper Mecha 3D loaded');
+        console.log('Sniper Mecha Multiplayer loaded');
     </script>
 </body>
 </html>
