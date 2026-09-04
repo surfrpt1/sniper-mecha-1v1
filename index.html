@@ -3,70 +3,43 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-    <title>Sniper Mecha 1v1</title>
+    <title>Sniper Mecha 1v1 - 3D</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            user-select: none;
-            -webkit-touch-callout: none;
-            touch-action: none;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-touch-callout: none; touch-action: none; }
         body {
             background: #0a0a1a;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             overflow: hidden;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             touch-action: none;
         }
         #gameWrapper {
             position: relative;
-            width: min(100vw, 100vh * 1.5); /* maintain 3:2 aspect */
-            max-width: 100vw;
-            max-height: 100vh;
-            aspect-ratio: 3 / 2;
-            touch-action: none;
-            background: #141428;
-            border-radius: 12px;
-            border: 2px solid #2a2a4a;
-            box-shadow: 0 0 40px rgba(0, 100, 255, 0.2);
+            width: 100vw;
+            height: 100vh;
             overflow: hidden;
+            background: #0a0a1a;
         }
-        canvas {
-            width: 100% !important;
-            height: 100% !important;
+        #three-canvas {
+            width: 100%;
+            height: 100%;
             display: block;
-            background: #141428;
-            touch-action: none;
-            pointer-events: auto;
         }
 
         /* Menu overlay */
         #menu {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             background: rgba(10, 10, 30, 0.85);
             backdrop-filter: blur(6px);
-            border-radius: 12px;
             z-index: 20;
             pointer-events: auto;
             transition: opacity 0.3s;
         }
-        #menu.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
+        #menu.hidden { opacity: 0; pointer-events: none; }
         #menu h1 {
             font-size: clamp(2rem, 8vw, 4rem);
             color: #88ccff;
@@ -95,99 +68,14 @@
             letter-spacing: 1px;
             touch-action: manipulation;
         }
-        .menu-btn:hover {
-            background: #2a4a7a;
-            border-color: #6a9aff;
-            transform: scale(1.03);
-        }
-        .menu-btn:active {
-            transform: scale(0.97);
-        }
-        .menu-btn.disabled {
-            opacity: 0.4;
-            cursor: not-allowed;
-            border-color: #3a3a4a;
-        }
-
-        /* Touch controls overlay */
-        #controlsOverlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 10;
-            touch-action: none;
-        }
-        #controlsOverlay.active {
-            pointer-events: auto;
-        }
-        .joystick-area {
-            position: absolute;
-            width: 30%;
-            aspect-ratio: 1/1;
-            bottom: 8%;
-            left: 5%;
-            pointer-events: auto;
-            touch-action: none;
-            transition: all 0.1s;
-        }
-        .joystick-base {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.08);
-            border: 2px solid rgba(255, 255, 255, 0.15);
-            position: relative;
-            touch-action: none;
-        }
-        .joystick-thumb {
-            width: 45%;
-            height: 45%;
-            border-radius: 50%;
-            background: rgba(100, 180, 255, 0.5);
-            border: 2px solid rgba(100, 180, 255, 0.8);
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            touch-action: none;
-            transition: none;
-        }
-        .fire-btn {
-            position: absolute;
-            width: 18%;
-            aspect-ratio: 1/1;
-            bottom: 10%;
-            right: 8%;
-            border-radius: 50%;
-            background: radial-gradient(circle, #ff6644, #cc2200);
-            border: 3px solid #ffaa44;
-            color: white;
-            font-size: clamp(1.2rem, 4vw, 2.2rem);
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            pointer-events: auto;
-            touch-action: manipulation;
-            box-shadow: 0 0 30px rgba(255, 50, 0, 0.5);
-            cursor: pointer;
-            text-shadow: 0 0 10px rgba(255,255,200,0.8);
-            user-select: none;
-            transition: all 0.1s;
-        }
-        .fire-btn:active {
-            transform: scale(0.92);
-            box-shadow: 0 0 50px rgba(255, 50, 0, 0.8);
-        }
+        .menu-btn:hover { background: #2a4a7a; border-color: #6a9aff; transform: scale(1.03); }
+        .menu-btn:active { transform: scale(0.97); }
+        .menu-btn.disabled { opacity: 0.4; cursor: not-allowed; border-color: #3a3a4a; }
 
         /* HUD */
         #hud {
             position: absolute;
-            top: 10px;
-            left: 10px;
+            top: 10px; left: 10px;
             color: #aac;
             font-size: clamp(0.7rem, 1.5vw, 1rem);
             font-family: monospace;
@@ -196,14 +84,10 @@
             text-shadow: 0 0 10px #000;
             line-height: 1.6;
         }
-        #hud .timer {
-            font-size: clamp(1rem, 3vw, 1.6rem);
-            color: #ffcc44;
-        }
+        #hud .timer { font-size: clamp(1rem, 3vw, 1.6rem); color: #ffcc44; }
         #settingsBtn {
             position: absolute;
-            top: 12px;
-            right: 12px;
+            top: 12px; right: 12px;
             z-index: 16;
             background: rgba(0,0,0,0.5);
             border: 1px solid #3a5a7a;
@@ -220,18 +104,13 @@
             touch-action: manipulation;
             transition: 0.2s;
         }
-        #settingsBtn:hover {
-            background: rgba(30,60,100,0.7);
-        }
-        #settingsBtn:active {
-            transform: scale(0.9);
-        }
+        #settingsBtn:hover { background: rgba(30,60,100,0.7); }
+        #settingsBtn:active { transform: scale(0.9); }
 
-        /* Settings panel */
+        /* Settings panel (simplified for 3D) */
         #settingsPanel {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             width: min(90%, 400px);
             background: rgba(10,10,30,0.95);
@@ -245,15 +124,8 @@
             backdrop-filter: blur(8px);
             pointer-events: auto;
         }
-        #settingsPanel.show {
-            display: flex;
-        }
-        #settingsPanel h2 {
-            color: #88ccff;
-            font-size: 1.4rem;
-            text-align: center;
-            margin-bottom: 4px;
-        }
+        #settingsPanel.show { display: flex; }
+        #settingsPanel h2 { color: #88ccff; font-size: 1.4rem; text-align: center; }
         .setting-row {
             display: flex;
             justify-content: space-between;
@@ -277,11 +149,7 @@
             background: #44aaff;
             cursor: pointer;
         }
-        .setting-row span {
-            min-width: 30px;
-            text-align: right;
-            color: #88ccff;
-        }
+        .setting-row span { min-width: 30px; text-align: right; color: #88ccff; }
         .settings-close-btn {
             background: #2a3a5a;
             border: none;
@@ -293,9 +161,7 @@
             margin-top: 6px;
             touch-action: manipulation;
         }
-        .settings-close-btn:active {
-            transform: scale(0.96);
-        }
+        .settings-close-btn:active { transform: scale(0.96); }
         .settings-reset-btn {
             background: #3a2a2a;
             border: none;
@@ -310,23 +176,18 @@
         /* Game Over overlay */
         #gameOverMenu {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
             display: none;
             flex-direction: column;
             justify-content: center;
             align-items: center;
             background: rgba(0,0,0,0.75);
             backdrop-filter: blur(4px);
-            border-radius: 12px;
             z-index: 25;
             pointer-events: auto;
         }
-        #gameOverMenu.show {
-            display: flex;
-        }
+        #gameOverMenu.show { display: flex; }
         #gameOverMenu h1 {
             font-size: clamp(2.5rem, 8vw, 4.5rem);
             margin-bottom: 10px;
@@ -345,32 +206,80 @@
             padding: 12px 28px;
         }
 
-        /* Hide canvas border when wrapper is used */
-        canvas {
-            border: none;
+        /* Touch controls overlay (keep for mobile) */
+        #controlsOverlay {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            touch-action: none;
         }
-        #gameWrapper {
-            border: 2px solid #2a2a4a;
+        #controlsOverlay.active {
+            pointer-events: auto;
         }
 
-        @media (max-width: 600px) {
-            #menu h1 { font-size: 2.4rem; }
-            .menu-btn { font-size: 1.2rem; padding: 12px 28px; min-width: 160px; }
-            .fire-btn { font-size: 1.2rem; }
-            #hud { font-size: 0.8rem; }
-            #hud .timer { font-size: 1.2rem; }
-            #settingsBtn { width: 30px; height: 30px; font-size: 1rem; top: 8px; right: 8px; }
+        .joystick-area {
+            position: absolute;
+            width: 30%;
+            aspect-ratio: 1/1;
+            bottom: 8%; left: 5%;
+            pointer-events: auto;
+            touch-action: none;
+            transition: all 0.1s;
         }
+        .joystick-base {
+            width: 100%; height: 100%;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.08);
+            border: 2px solid rgba(255,255,255,0.15);
+            position: relative;
+            touch-action: none;
+        }
+        .joystick-thumb {
+            width: 45%; height: 45%;
+            border-radius: 50%;
+            background: rgba(100,180,255,0.5);
+            border: 2px solid rgba(100,180,255,0.8);
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            touch-action: none;
+            transition: none;
+        }
+        .fire-btn {
+            position: absolute;
+            width: 18%;
+            aspect-ratio: 1/1;
+            bottom: 10%; right: 8%;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff6644, #cc2200);
+            border: 3px solid #ffaa44;
+            color: white;
+            font-size: clamp(1.2rem, 4vw, 2.2rem);
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            touch-action: manipulation;
+            box-shadow: 0 0 30px rgba(255,50,0,0.5);
+            cursor: pointer;
+            text-shadow: 0 0 10px rgba(255,255,200,0.8);
+            user-select: none;
+            transition: all 0.1s;
+        }
+        .fire-btn:active { transform: scale(0.92); box-shadow: 0 0 50px rgba(255,50,0,0.8); }
     </style>
 </head>
 <body>
 
     <div id="gameWrapper">
-        <canvas id="gameCanvas" width="900" height="600"></canvas>
+        <div id="three-canvas"></div>
 
         <!-- Menu -->
         <div id="menu">
-            <h1>🔫 SNIPER MECHA</h1>
+            <h1>🔫 SNIPER MECHA 3D</h1>
             <p>1v1 · BGMI WOW Style</p>
             <button class="menu-btn" id="playBtn">▶ Play vs Bot</button>
             <button class="menu-btn disabled" id="multiBtn">🌐 Online (coming soon)</button>
@@ -392,8 +301,6 @@
 
         <!-- Settings Button -->
         <div id="settingsBtn">⚙</div>
-
-        <!-- Settings Panel -->
         <div id="settingsPanel">
             <h2>⚙ Controls</h2>
             <div class="setting-row">
@@ -441,10 +348,19 @@
         </div>
     </div>
 
-    <script>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+
         // ===== DOM refs =====
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('three-canvas');
         const menu = document.getElementById('menu');
         const playBtn = document.getElementById('playBtn');
         const multiBtn = document.getElementById('multiBtn');
@@ -479,8 +395,45 @@
         const fireXVal = document.getElementById('fireXVal');
         const fireYVal = document.getElementById('fireYVal');
 
-        // ===== Canvas dimensions (logical) =====
-        const W = 900, H = 600;
+        // ===== Three.js setup =====
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+
+        // Camera
+        const camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+        camera.position.set(0, 25, 25);
+        camera.lookAt(0, 0, 0);
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(container.clientWidth, container.clientHeight);
+        renderer.shadowMap.enabled = true;
+        container.appendChild(renderer.domElement);
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x404060);
+        scene.add(ambientLight);
+        const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+        dirLight.position.set(10, 20, 10);
+        dirLight.castShadow = true;
+        scene.add(dirLight);
+        const fillLight = new THREE.DirectionalLight(0x4488ff, 0.3);
+        fillLight.position.set(-10, 5, -10);
+        scene.add(fillLight);
+
+        // Ground
+        const groundGeo = new THREE.PlaneGeometry(40, 40);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x141428, roughness: 0.7, metalness: 0.1 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI / 2;
+        ground.position.y = -0.5;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // Grid helper
+        const gridHelper = new THREE.GridHelper(40, 20, 0x2a2a5a, 0x1a1a3a);
+        gridHelper.position.y = -0.4;
+        scene.add(gridHelper);
 
         // ===== Game state =====
         const STATE = { MENU: 0, COUNTDOWN: 1, PLAYING: 2, GAMEOVER: 3 };
@@ -490,22 +443,27 @@
         let matchTimerInterval = null;
         let gameOverWinner = null;
 
+        // Arena bounds
+        const BOUNDS = 18;
+
         // ===== Players =====
         const player = {
-            x: 150, y: 300,
-            radius: 20,
-            speed: 3.5,
+            x: -6, z: 0,
+            radius: 1.2,
+            speed: 0.07,
             health: 100,
             maxHealth: 100,
             angle: 0,
             cooldown: 0,
             shootCooldown: 40,
-            alive: true
+            alive: true,
+            mesh: null,
+            aimTarget: new THREE.Vector3(0, 0, 1)
         };
         const enemy = {
-            x: 750, y: 300,
-            radius: 20,
-            speed: 2.0,
+            x: 6, z: 0,
+            radius: 1.2,
+            speed: 0.04,
             health: 100,
             maxHealth: 100,
             angle: 0,
@@ -513,39 +471,127 @@
             shootCooldown: 50,
             alive: true,
             state: 'idle',
-            timer: 0
+            timer: 0,
+            mesh: null
         };
 
+        // Bullets
         let bullets = [];
-        const bulletSpeed = 8;
-        const bulletRadius = 4;
+        const bulletSpeed = 0.2;
+        const bulletRadius = 0.2;
 
+        // Obstacles (3D boxes)
         const obstacles = [
-            { x: 350, y: 200, w: 60, h: 40 },
-            { x: 500, y: 380, w: 40, h: 60 },
-            { x: 200, y: 450, w: 80, h: 30 },
-            { x: 650, y: 100, w: 30, h: 80 },
-            { x: 450, y: 280, w: 20, h: 20 }
+            { x: -3, z: -3, w: 2, h: 1.5, d: 2 },
+            { x: 4, z: 2, w: 2, h: 1.5, d: 2 },
+            { x: -5, z: 5, w: 2, h: 1.5, d: 2 },
+            { x: 6, z: -4, w: 2, h: 1.5, d: 2 },
+            { x: 0, z: 0, w: 1.5, h: 1.5, d: 1.5 }
         ];
+        const obstacleMeshes = [];
+
+        function createObstacles() {
+            for (let o of obstacles) {
+                const geo = new THREE.BoxGeometry(o.w, o.h, o.d);
+                const mat = new THREE.MeshStandardMaterial({ color: 0x2a2a5a, roughness: 0.6, metalness: 0.2 });
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(o.x, o.h/2 - 0.5, o.z);
+                mesh.castShadow = true;
+                mesh.receiveShadow = true;
+                scene.add(mesh);
+                obstacleMeshes.push(mesh);
+            }
+        }
+        createObstacles();
+
+        // ===== Create humanoid character =====
+        function createHumanoid(color, isEnemy = false) {
+            const group = new THREE.Group();
+
+            // Body (cylinder)
+            const bodyGeo = new THREE.CylinderGeometry(0.7, 0.7, 1.4, 8);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.4, metalness: 0.2 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.7;
+            body.castShadow = true;
+            group.add(body);
+
+            // Head (sphere)
+            const headGeo = new THREE.SphereGeometry(0.5, 8, 8);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xffcc99, roughness: 0.6 });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.6;
+            head.castShadow = true;
+            group.add(head);
+
+            // Arms (boxes)
+            const armMat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.5 });
+            const armGeo = new THREE.BoxGeometry(0.2, 1.0, 0.2);
+            const armL = new THREE.Mesh(armGeo, armMat);
+            armL.position.set(-0.8, 0.9, 0);
+            armL.castShadow = true;
+            group.add(armL);
+            const armR = new THREE.Mesh(armGeo, armMat);
+            armR.position.set(0.8, 0.9, 0);
+            armR.castShadow = true;
+            group.add(armR);
+
+            // Legs
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x333366, roughness: 0.6 });
+            const legGeo = new THREE.BoxGeometry(0.3, 0.8, 0.3);
+            const legL = new THREE.Mesh(legGeo, legMat);
+            legL.position.set(-0.3, 0.1, 0);
+            legL.castShadow = true;
+            group.add(legL);
+            const legR = new THREE.Mesh(legGeo, legMat);
+            legR.position.set(0.3, 0.1, 0);
+            legR.castShadow = true;
+            group.add(legR);
+
+            // Sniper rifle (for right arm)
+            const gunMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 0.3, metalness: 0.7 });
+            const gunBody = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.15, 0.15), gunMat);
+            gunBody.position.set(0.7, 0.2, 0.6);
+            group.add(gunBody);
+            const gunBarrel = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 0.6), gunMat);
+            gunBarrel.rotation.x = Math.PI/2;
+            gunBarrel.position.set(0.7, 0.2, 1.0);
+            group.add(gunBarrel);
+
+            // Scope
+            const scopeMat = new THREE.MeshStandardMaterial({ color: 0xffcc00, emissive: 0xffaa00, emissiveIntensity: 0.3 });
+            const scope = new THREE.Mesh(new THREE.SphereGeometry(0.08, 6, 6), scopeMat);
+            scope.position.set(0.7, 0.35, 0.8);
+            group.add(scope);
+
+            group.scale.set(0.6, 0.6, 0.6);
+            return group;
+        }
+
+        // Create player and enemy meshes
+        const playerGroup = createHumanoid(0x44aaff);
+        playerGroup.position.set(player.x, -0.5, player.z);
+        scene.add(playerGroup);
+        player.mesh = playerGroup;
+
+        const enemyGroup = createHumanoid(0xff6644, true);
+        enemyGroup.position.set(enemy.x, -0.5, enemy.z);
+        scene.add(enemyGroup);
+        enemy.mesh = enemyGroup;
 
         // ===== Input =====
         const keys = { w: false, a: false, s: false, d: false };
-        let mouseX = player.x, mouseY = player.y;
+        let mouseX = 0, mouseY = 0;
         let mouseDown = false;
-
-        // Touch joystick
         let joystickActive = false;
         let joystickDX = 0, joystickDY = 0;
         let touchFire = false;
 
-        // Settings (stored in localStorage)
+        // ===== Settings =====
         const defaultSettings = {
-            joySize: 30,
-            fireSize: 18,
-            joyX: 5,
-            joyY: 8,
-            fireX: 8,
-            fireY: 10
+            joySize: 30, fireSize: 18,
+            joyX: 5, joyY: 8,
+            fireX: 8, fireY: 10
         };
         let settings = { ...defaultSettings };
 
@@ -561,11 +607,9 @@
             applySettingsUI();
             applySettingsToControls();
         }
-
         function saveSettings() {
             localStorage.setItem('sniperMechaSettings', JSON.stringify(settings));
         }
-
         function applySettingsUI() {
             joySizeSlider.value = settings.joySize;
             fireSizeSlider.value = settings.fireSize;
@@ -580,19 +624,16 @@
             fireXVal.textContent = settings.fireX + '%';
             fireYVal.textContent = settings.fireY + '%';
         }
-
         function applySettingsToControls() {
             moveJoystickArea.style.width = settings.joySize + '%';
             moveJoystickArea.style.aspectRatio = '1/1';
             moveJoystickArea.style.bottom = settings.joyY + '%';
             moveJoystickArea.style.left = settings.joyX + '%';
-
             fireBtn.style.width = settings.fireSize + '%';
             fireBtn.style.aspectRatio = '1/1';
             fireBtn.style.bottom = settings.fireY + '%';
             fireBtn.style.right = settings.fireX + '%';
         }
-
         function resetSettingsToDefault() {
             settings = { ...defaultSettings };
             saveSettings();
@@ -601,82 +642,104 @@
         }
 
         // ===== Helpers =====
-        function dist(x1, y1, x2, y2) {
-            return Math.hypot(x2 - x1, y2 - y1);
+        function dist(x1, z1, x2, z2) {
+            return Math.hypot(x2 - x1, z2 - z1);
         }
 
-        function collidesWithObstacles(x, y, r) {
+        function collidesWithObstacles(x, z, r) {
             for (let o of obstacles) {
-                const closestX = Math.max(o.x, Math.min(x, o.x + o.w));
-                const closestY = Math.max(o.y, Math.min(y, o.y + o.h));
-                if (dist(x, y, closestX, closestY) < r) return true;
+                const halfW = o.w/2, halfD = o.d/2;
+                const closestX = Math.max(o.x - halfW, Math.min(x, o.x + halfW));
+                const closestZ = Math.max(o.z - halfD, Math.min(z, o.z + halfD));
+                if (dist(x, z, closestX, closestZ) < r) return true;
             }
             return false;
         }
 
-        function movePlayer(p, dx, dy) {
+        function movePlayer(p, dx, dz) {
             let nx = p.x + dx;
-            let ny = p.y + dy;
-            if (nx - p.radius < 0) nx = p.radius;
-            if (nx + p.radius > W) nx = W - p.radius;
-            if (ny - p.radius < 0) ny = p.radius;
-            if (ny + p.radius > H) ny = H - p.radius;
-            if (!collidesWithObstacles(nx, ny, p.radius)) {
+            let nz = p.z + dz;
+            if (nx < -BOUNDS) nx = -BOUNDS;
+            if (nx > BOUNDS) nx = BOUNDS;
+            if (nz < -BOUNDS) nz = -BOUNDS;
+            if (nz > BOUNDS) nz = BOUNDS;
+            if (!collidesWithObstacles(nx, nz, p.radius)) {
                 p.x = nx;
-                p.y = ny;
+                p.z = nz;
             } else {
-                if (!collidesWithObstacles(nx, p.y, p.radius)) {
+                if (!collidesWithObstacles(nx, p.z, p.radius)) {
                     p.x = nx;
-                } else if (!collidesWithObstacles(p.x, ny, p.radius)) {
-                    p.y = ny;
+                } else if (!collidesWithObstacles(p.x, nz, p.radius)) {
+                    p.z = nz;
                 }
+            }
+            // Update mesh position
+            if (p.mesh) {
+                p.mesh.position.x = p.x;
+                p.mesh.position.z = p.z;
+                // Rotate to face angle
+                p.mesh.rotation.y = p.angle;
             }
         }
 
-        function shoot(shooter, targetX, targetY, isEnemy = false) {
+        function shoot(shooter, targetX, targetZ, isEnemy = false) {
             if (shooter.cooldown > 0) return;
-            const angle = Math.atan2(targetY - shooter.y, targetX - shooter.x);
+            const angle = Math.atan2(targetZ - shooter.z, targetX - shooter.x);
             const speed = bulletSpeed;
-            bullets.push({
-                x: shooter.x + Math.cos(angle) * (shooter.radius + 4),
-                y: shooter.y + Math.sin(angle) * (shooter.radius + 4),
+            const b = {
+                x: shooter.x + Math.cos(angle) * (shooter.radius + 0.5),
+                z: shooter.z + Math.sin(angle) * (shooter.radius + 0.5),
                 vx: Math.cos(angle) * speed,
-                vy: Math.sin(angle) * speed,
+                vz: Math.sin(angle) * speed,
                 radius: bulletRadius,
                 isEnemy: isEnemy,
-                alive: true
+                alive: true,
+                mesh: null
+            };
+            // Create visual sphere
+            const geo = new THREE.SphereGeometry(bulletRadius, 6, 6);
+            const mat = new THREE.MeshStandardMaterial({
+                color: isEnemy ? 0xff6666 : 0x66ff66,
+                emissive: isEnemy ? 0xff0000 : 0x00ff00,
+                emissiveIntensity: 0.5
             });
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.set(b.x, 0.2, b.z);
+            mesh.castShadow = true;
+            scene.add(mesh);
+            b.mesh = mesh;
+            bullets.push(b);
             shooter.cooldown = shooter.shootCooldown;
         }
 
         // ===== AI =====
         function updateAI() {
             if (!enemy.alive) return;
-            enemy.angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-            const distToPlayer = dist(enemy.x, enemy.y, player.x, player.y);
-            if (distToPlayer > 500) enemy.state = 'chase';
-            else if (distToPlayer < 250) enemy.state = 'retreat';
+            enemy.angle = Math.atan2(player.z - enemy.z, player.x - enemy.x);
+            const distToPlayer = dist(enemy.x, enemy.z, player.x, player.z);
+            if (distToPlayer > 10) enemy.state = 'chase';
+            else if (distToPlayer < 4) enemy.state = 'retreat';
             else enemy.state = 'idle';
 
-            let dx = 0, dy = 0;
+            let dx = 0, dz = 0;
             if (enemy.state === 'chase') {
                 dx = Math.cos(enemy.angle) * enemy.speed;
-                dy = Math.sin(enemy.angle) * enemy.speed;
+                dz = Math.sin(enemy.angle) * enemy.speed;
             } else if (enemy.state === 'retreat') {
                 dx = -Math.cos(enemy.angle) * enemy.speed * 0.7;
-                dy = -Math.sin(enemy.angle) * enemy.speed * 0.7;
+                dz = -Math.sin(enemy.angle) * enemy.speed * 0.7;
             } else {
                 if (enemy.timer % 120 < 60) {
-                    dx = Math.cos(enemy.angle + Math.PI/2) * 0.8;
-                    dy = Math.sin(enemy.angle + Math.PI/2) * 0.8;
+                    dx = Math.cos(enemy.angle + Math.PI/2) * 0.5;
+                    dz = Math.sin(enemy.angle + Math.PI/2) * 0.5;
                 } else {
-                    dx = Math.cos(enemy.angle - Math.PI/2) * 0.8;
-                    dy = Math.sin(enemy.angle - Math.PI/2) * 0.8;
+                    dx = Math.cos(enemy.angle - Math.PI/2) * 0.5;
+                    dz = Math.sin(enemy.angle - Math.PI/2) * 0.5;
                 }
             }
-            movePlayer(enemy, dx, dy);
-            if (distToPlayer < 600 && Math.abs(Math.atan2(player.y - enemy.y, player.x - enemy.x) - enemy.angle) < 0.2) {
-                shoot(enemy, player.x, player.y, true);
+            movePlayer(enemy, dx, dz);
+            if (distToPlayer < 12 && Math.abs(Math.atan2(player.z - enemy.z, player.x - enemy.x) - enemy.angle) < 0.2) {
+                shoot(enemy, player.x, player.z, true);
             }
             enemy.timer++;
         }
@@ -688,9 +751,9 @@
             if (player.cooldown > 0) player.cooldown--;
             if (enemy.cooldown > 0) enemy.cooldown--;
 
-            let dx = 0, dy = 0;
-            if (keys.w) dy -= player.speed;
-            if (keys.s) dy += player.speed;
+            let dx = 0, dz = 0;
+            if (keys.w) dz -= player.speed;
+            if (keys.s) dz += player.speed;
             if (keys.a) dx -= player.speed;
             if (keys.d) dx += player.speed;
             if (joystickActive) {
@@ -700,70 +763,101 @@
                     const normDY = joystickDY / mag;
                     const speed = Math.min(mag, 1) * player.speed;
                     dx += normDX * speed;
-                    dy += normDY * speed;
+                    dz += normDY * speed;
                 }
             }
-            if (dx !== 0 || dy !== 0) {
-                const len = Math.hypot(dx, dy);
+            if (dx !== 0 || dz !== 0) {
+                const len = Math.hypot(dx, dz);
                 dx = dx / len * Math.min(len, player.speed);
-                dy = dy / len * Math.min(len, player.speed);
-                movePlayer(player, dx, dy);
+                dz = dz / len * Math.min(len, player.speed);
+                movePlayer(player, dx, dz);
             }
 
-            // Aim with mouse or auto-aim for touch
+            // Aim: map mouse to ground plane (z=0)
             if (touchFire) {
-                const targetX = enemy.alive ? enemy.x : mouseX;
-                const targetY = enemy.alive ? enemy.y : mouseY;
-                player.angle = Math.atan2(targetY - player.y, targetX - player.x);
+                const targetX = enemy.alive ? enemy.x : player.x + 1;
+                const targetZ = enemy.alive ? enemy.z : player.z;
+                player.angle = Math.atan2(targetZ - player.z, targetX - player.x);
                 if (player.alive) {
-                    shoot(player, targetX, targetY, false);
+                    shoot(player, targetX, targetZ, false);
                 }
             } else {
-                player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
-                // Mouse shooting: if mouseDown, shoot at mouse position (or enemy if you want auto-aim)
+                // Mouse aim: project mouse to ground plane
+                const rect = renderer.domElement.getBoundingClientRect();
+                const ndcX = ((mouseX - rect.left) / rect.width) * 2 - 1;
+                const ndcY = -((mouseY - rect.top) / rect.height) * 2 + 1;
+                const vector = new THREE.Vector3(ndcX, ndcY, 0.5);
+                vector.unproject(camera);
+                const dir = vector.sub(camera.position).normalize();
+                const distance = -camera.position.y / dir.y;
+                const pos = camera.position.clone().add(dir.multiplyScalar(distance));
+                const aimX = pos.x;
+                const aimZ = pos.z;
+                player.angle = Math.atan2(aimZ - player.z, aimX - player.x);
+                // Mouse shooting: if mouseDown, shoot at aim point
                 if (mouseDown && player.alive) {
-                    shoot(player, mouseX, mouseY, false);
+                    shoot(player, aimX, aimZ, false);
                 }
             }
 
             updateAI();
 
+            // Update bullets
             for (let b of bullets) {
                 if (!b.alive) continue;
                 b.x += b.vx;
-                b.y += b.vy;
-                if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { b.alive = false; continue; }
+                b.z += b.vz;
+                if (b.mesh) {
+                    b.mesh.position.x = b.x;
+                    b.mesh.position.z = b.z;
+                }
+                if (b.x < -BOUNDS || b.x > BOUNDS || b.z < -BOUNDS || b.z > BOUNDS) {
+                    b.alive = false;
+                    if (b.mesh) { scene.remove(b.mesh); b.mesh = null; }
+                    continue;
+                }
                 let hitObstacle = false;
                 for (let o of obstacles) {
-                    if (b.x >= o.x && b.x <= o.x + o.w && b.y >= o.y && b.y <= o.y + o.h) {
+                    const halfW = o.w/2, halfD = o.d/2;
+                    if (b.x >= o.x - halfW && b.x <= o.x + halfW &&
+                        b.z >= o.z - halfD && b.z <= o.z + halfD) {
                         hitObstacle = true;
                         break;
                     }
                 }
-                if (hitObstacle) { b.alive = false; continue; }
+                if (hitObstacle) {
+                    b.alive = false;
+                    if (b.mesh) { scene.remove(b.mesh); b.mesh = null; }
+                    continue;
+                }
                 if (!b.isEnemy && b.alive && enemy.alive) {
-                    if (dist(b.x, b.y, enemy.x, enemy.y) < enemy.radius + b.radius) {
+                    if (dist(b.x, b.z, enemy.x, enemy.z) < enemy.radius + b.radius) {
                         enemy.health -= 35;
                         b.alive = false;
+                        if (b.mesh) { scene.remove(b.mesh); b.mesh = null; }
                         if (enemy.health <= 0) { enemy.health = 0; enemy.alive = false; }
                         continue;
                     }
                 }
                 if (b.isEnemy && b.alive && player.alive) {
-                    if (dist(b.x, b.y, player.x, player.y) < player.radius + b.radius) {
+                    if (dist(b.x, b.z, player.x, player.z) < player.radius + b.radius) {
                         player.health -= 35;
                         b.alive = false;
+                        if (b.mesh) { scene.remove(b.mesh); b.mesh = null; }
                         if (player.health <= 0) { player.health = 0; player.alive = false; }
                         continue;
                     }
                 }
             }
+            // Clean dead bullets
             bullets = bullets.filter(b => b.alive);
 
+            // Update HUD
             hudPlayerHP.textContent = Math.ceil(player.health);
             hudEnemyHP.textContent = Math.ceil(enemy.health);
             hudTimer.textContent = Math.ceil(matchTime);
 
+            // Check win/lose
             if (!player.alive || !enemy.alive || matchTime <= 0) {
                 gameState = STATE.GAMEOVER;
                 clearInterval(matchTimerInterval);
@@ -780,114 +874,7 @@
             }
         }
 
-        // ===== Draw =====
-        function draw() {
-            ctx.clearRect(0, 0, W, H);
-
-            ctx.strokeStyle = '#1a1a3a';
-            ctx.lineWidth = 1;
-            for (let i = 0; i < W; i += 40) {
-                ctx.beginPath();
-                ctx.moveTo(i, 0);
-                ctx.lineTo(i, H);
-                ctx.stroke();
-            }
-            for (let i = 0; i < H; i += 40) {
-                ctx.beginPath();
-                ctx.moveTo(0, i);
-                ctx.lineTo(W, i);
-                ctx.stroke();
-            }
-
-            ctx.fillStyle = '#2a2a5a';
-            ctx.shadowColor = '#4a4a8a';
-            ctx.shadowBlur = 10;
-            for (let o of obstacles) {
-                ctx.fillRect(o.x, o.y, o.w, o.h);
-            }
-            ctx.shadowBlur = 0;
-
-            for (let b of bullets) {
-                ctx.beginPath();
-                ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
-                ctx.fillStyle = b.isEnemy ? '#ff6666' : '#66ff66';
-                ctx.shadowColor = b.isEnemy ? '#ff0000' : '#00ff00';
-                ctx.shadowBlur = 15;
-                ctx.fill();
-                ctx.shadowBlur = 0;
-            }
-
-            function drawMech(p, color) {
-                if (!p.alive) return;
-                ctx.save();
-                ctx.translate(p.x, p.y);
-                const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, p.radius);
-                grad.addColorStop(0, color);
-                grad.addColorStop(1, '#1a1a2a');
-                ctx.fillStyle = grad;
-                ctx.shadowColor = color;
-                ctx.shadowBlur = 20;
-                ctx.beginPath();
-                ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.shadowBlur = 0;
-                ctx.rotate(p.angle);
-                ctx.fillStyle = '#888';
-                ctx.fillRect(p.radius - 5, -4, 30, 8);
-                ctx.fillStyle = '#aaa';
-                ctx.fillRect(p.radius + 20, -2, 10, 4);
-                ctx.fillStyle = '#ffcc00';
-                ctx.beginPath();
-                ctx.arc(p.radius - 2, 0, 4, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-
-                const barW = 50;
-                const barH = 6;
-                const barX = p.x - barW/2;
-                const barY = p.y - p.radius - 18;
-                ctx.fillStyle = '#333';
-                ctx.fillRect(barX, barY, barW, barH);
-                const healthPct = p.health / p.maxHealth;
-                ctx.fillStyle = healthPct > 0.5 ? '#44ff44' : '#ff4444';
-                ctx.fillRect(barX, barY, barW * healthPct, barH);
-                ctx.strokeStyle = '#888';
-                ctx.lineWidth = 1;
-                ctx.strokeRect(barX, barY, barW, barH);
-            }
-
-            drawMech(player, '#44aaff');
-            drawMech(enemy, '#ff6644');
-
-            // Crosshair (only if not touch firing)
-            if (!touchFire) {
-                ctx.strokeStyle = '#ff4444';
-                ctx.lineWidth = 2;
-                const cx = mouseX, cy = mouseY;
-                const size = 12;
-                ctx.beginPath();
-                ctx.moveTo(cx - size, cy); ctx.lineTo(cx - 4, cy);
-                ctx.moveTo(cx + 4, cy); ctx.lineTo(cx + size, cy);
-                ctx.moveTo(cx, cy - size); ctx.lineTo(cx, cy - 4);
-                ctx.moveTo(cx, cy + 4); ctx.lineTo(cx, cy + size);
-                ctx.stroke();
-                ctx.fillStyle = 'rgba(255,255,255,0.2)';
-                ctx.beginPath();
-                ctx.arc(cx, cy, 12, 0, Math.PI*2);
-                ctx.stroke();
-            }
-
-            if (gameState === STATE.COUNTDOWN) {
-                ctx.fillStyle = 'rgba(0,0,0,0.5)';
-                ctx.fillRect(0, 0, W, H);
-                ctx.fillStyle = '#ffffff';
-                ctx.font = '80px sans-serif';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'middle';
-                ctx.fillText(countdown > 0 ? countdown : 'GO!', W/2, H/2);
-            }
-        }
-
+        // ===== Game Over =====
         function showGameOver() {
             gameOverMenu.classList.add('show');
             controlsOverlay.classList.remove('active');
@@ -936,10 +923,14 @@
             clearInterval(matchTimerInterval);
             player.health = player.maxHealth;
             player.alive = true;
-            player.x = 150; player.y = 300;
+            player.x = -6; player.z = 0;
             enemy.health = enemy.maxHealth;
             enemy.alive = true;
-            enemy.x = 750; enemy.y = 300;
+            enemy.x = 6; enemy.z = 0;
+            // Clear bullets
+            for (let b of bullets) {
+                if (b.mesh) scene.remove(b.mesh);
+            }
             bullets = [];
             matchTime = 60;
             hudTimer.textContent = '60';
@@ -950,6 +941,9 @@
             joystickActive = false;
             joystickDX = 0; joystickDY = 0;
             moveJoystickThumb.style.transform = 'translate(-50%, -50%)';
+            // Update meshes
+            player.mesh.position.set(player.x, -0.5, player.z);
+            enemy.mesh.position.set(enemy.x, -0.5, enemy.z);
         }
 
         function startGame() {
@@ -958,10 +952,13 @@
             hideGameOver();
             player.health = player.maxHealth;
             player.alive = true;
-            player.x = 150; player.y = 300;
+            player.x = -6; player.z = 0;
             enemy.health = enemy.maxHealth;
             enemy.alive = true;
-            enemy.x = 750; enemy.y = 300;
+            enemy.x = 6; enemy.z = 0;
+            for (let b of bullets) {
+                if (b.mesh) scene.remove(b.mesh);
+            }
             bullets = [];
             matchTime = 60;
             hudTimer.textContent = '60';
@@ -972,6 +969,8 @@
             joystickActive = false;
             joystickDX = 0; joystickDY = 0;
             moveJoystickThumb.style.transform = 'translate(-50%, -50%)';
+            player.mesh.position.set(player.x, -0.5, player.z);
+            enemy.mesh.position.set(enemy.x, -0.5, enemy.z);
 
             gameState = STATE.COUNTDOWN;
             countdown = 3;
@@ -1009,32 +1008,27 @@
             }
         });
 
-        // Mouse (canvas)
-        canvas.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-            mouseX = (e.clientX - rect.left) * scaleX;
-            mouseY = (e.clientY - rect.top) * scaleY;
-            mouseX = Math.max(0, Math.min(W, mouseX));
-            mouseY = Math.max(0, Math.min(H, mouseY));
+        // Mouse
+        renderer.domElement.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
         });
-        canvas.addEventListener('mousedown', (e) => {
+        renderer.domElement.addEventListener('mousedown', (e) => {
             if (e.button === 0) {
                 mouseDown = true;
                 e.preventDefault();
             }
         });
-        canvas.addEventListener('mouseup', (e) => {
+        renderer.domElement.addEventListener('mouseup', (e) => {
             if (e.button === 0) {
                 mouseDown = false;
                 e.preventDefault();
             }
         });
-        canvas.addEventListener('mouseleave', () => {
+        renderer.domElement.addEventListener('mouseleave', () => {
             mouseDown = false;
         });
-        canvas.addEventListener('contextmenu', (e) => e.preventDefault());
+        renderer.domElement.addEventListener('contextmenu', (e) => e.preventDefault());
 
         // Touch joystick
         function handleJoystickStart(e) {
@@ -1060,7 +1054,6 @@
             joystickDX = clamp(joystickDX);
             joystickDY = clamp(joystickDY);
         }
-
         function handleJoystickMove(e) {
             e.preventDefault();
             const touch = e.touches[0];
@@ -1084,7 +1077,6 @@
             joystickDX = clamp(joystickDX);
             joystickDY = clamp(joystickDY);
         }
-
         function handleJoystickEnd(e) {
             e.preventDefault();
             moveJoystickThumb.style.transform = 'translate(-50%, -50%)';
@@ -1092,7 +1084,6 @@
             joystickDX = 0;
             joystickDY = 0;
         }
-
         moveJoystickArea.addEventListener('touchstart', handleJoystickStart);
         moveJoystickArea.addEventListener('touchmove', handleJoystickMove);
         moveJoystickArea.addEventListener('touchend', handleJoystickEnd);
@@ -1103,7 +1094,7 @@
             e.preventDefault();
             touchFire = true;
             if (enemy.alive) {
-                player.angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+                player.angle = Math.atan2(enemy.z - player.z, enemy.x - player.x);
             }
         });
         fireBtn.addEventListener('touchend', (e) => {
@@ -1113,12 +1104,11 @@
         fireBtn.addEventListener('touchcancel', (e) => {
             touchFire = false;
         });
-        // Also allow mouse click on fire button for desktop touchpad
         fireBtn.addEventListener('mousedown', (e) => {
             e.preventDefault();
             touchFire = true;
             if (enemy.alive) {
-                player.angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+                player.angle = Math.atan2(enemy.z - player.z, enemy.x - player.x);
             }
         });
         fireBtn.addEventListener('mouseup', (e) => {
@@ -1172,35 +1162,43 @@
         gameOverReturnBtn.addEventListener('click', resetToMenu);
         gameOverReturnBtn.addEventListener('touchend', (e) => { e.preventDefault(); resetToMenu(); });
 
-        // ===== Game loop =====
-        function gameLoop() {
+        // ===== Animation loop =====
+        function animate() {
+            requestAnimationFrame(animate);
             update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
-        gameLoop();
-
-        // Responsive resize: ensure wrapper fills screen properly
-        function resizeGame() {
-            const wrapper = document.getElementById('gameWrapper');
-            const maxWidth = window.innerWidth;
-            const maxHeight = window.innerHeight;
-            const aspect = 3 / 2;
-            let w = maxWidth;
-            let h = w / aspect;
-            if (h > maxHeight) {
-                h = maxHeight;
-                w = h * aspect;
+            // Update camera to follow player (third-person top-down)
+            if (gameState === STATE.PLAYING || gameState === STATE.COUNTDOWN) {
+                const targetX = player.x;
+                const targetZ = player.z;
+                camera.position.x = targetX;
+                camera.position.z = targetZ + 20;
+                camera.position.y = 15;
+                camera.lookAt(targetX, 0, targetZ);
+            } else {
+                // Default camera when not playing
+                camera.position.set(0, 25, 25);
+                camera.lookAt(0, 0, 0);
             }
-            wrapper.style.width = w + 'px';
-            wrapper.style.height = h + 'px';
+            renderer.render(scene, camera);
         }
-        window.addEventListener('resize', resizeGame);
-        resizeGame();
+        animate();
 
-        // Load settings and start
+        // Handle resize
+        function resize() {
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        }
+        window.addEventListener('resize', resize);
+
+        // ===== Init =====
         loadSettings();
         resetToMenu();
+
+        // Expose for debugging
+        console.log('Sniper Mecha 3D loaded');
     </script>
 </body>
 </html>
