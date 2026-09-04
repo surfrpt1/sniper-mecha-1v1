@@ -1,0 +1,12 @@
+{
+  "name": "sniper-mecha-1v1",
+  "version": "1.0.0",
+  "description": "BGMI WOW mode style sniper mecha 1v1 game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
