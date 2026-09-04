@@ -1,11 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sniper Mecha 1v1 - BGMI WOW Style</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Sniper Mecha 1v1</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-touch-callout: none;
+            touch-action: none;
+        }
         body {
             background: #0a0a1a;
             display: flex;
@@ -13,53 +20,250 @@
             align-items: center;
             height: 100vh;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #gameWrapper {
+            position: relative;
+            width: 900px;
+            max-width: 100vw;
+            max-height: 100vh;
+            aspect-ratio: 900 / 600;
+            touch-action: none;
         }
         canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
             border: 2px solid #2a2a4a;
             border-radius: 12px;
             background: #141428;
             box-shadow: 0 0 40px rgba(0, 100, 255, 0.2);
+            touch-action: none;
         }
-        #ui {
+
+        /* Menu overlay */
+        #menu {
             position: absolute;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            color: #aac;
-            font-size: 18px;
-            background: rgba(10, 10, 30, 0.8);
-            padding: 8px 20px;
-            border-radius: 30px;
-            border: 1px solid #3a3a6a;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(10, 10, 30, 0.85);
+            backdrop-filter: blur(6px);
+            border-radius: 12px;
+            z-index: 20;
+            pointer-events: auto;
+            transition: opacity 0.3s;
+        }
+        #menu.hidden {
+            opacity: 0;
             pointer-events: none;
-            text-align: center;
-            z-index: 10;
         }
-        #controls {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
+        #menu h1 {
+            font-size: 3.5rem;
+            color: #88ccff;
+            text-shadow: 0 0 20px #44aaff;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        #menu p {
             color: #8899bb;
-            font-size: 14px;
-            background: rgba(10, 10, 30, 0.7);
-            padding: 6px 16px;
-            border-radius: 20px;
-            border: 1px solid #2a2a4a;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+        .menu-btn {
+            background: #1a2a4a;
+            border: 2px solid #3a6a9a;
+            color: #ccddff;
+            font-size: 1.6rem;
+            padding: 14px 48px;
+            margin: 10px;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            min-width: 240px;
+            text-align: center;
+            font-weight: 600;
+            letter-spacing: 1px;
+            touch-action: manipulation;
+        }
+        .menu-btn:hover {
+            background: #2a4a7a;
+            border-color: #6a9aff;
+            transform: scale(1.03);
+        }
+        .menu-btn:active {
+            transform: scale(0.97);
+        }
+        .menu-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: #3a3a4a;
+        }
+
+        /* Touch controls overlay */
+        #controlsOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
             z-index: 10;
+            touch-action: none;
+        }
+        #controlsOverlay.active {
+            pointer-events: auto;
+        }
+        .joystick-area {
+            position: absolute;
+            width: 30%;
+            aspect-ratio: 1/1;
+            bottom: 8%;
+            left: 5%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+        .joystick-base {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            position: relative;
+            touch-action: none;
+        }
+        .joystick-thumb {
+            width: 45%;
+            height: 45%;
+            border-radius: 50%;
+            background: rgba(100, 180, 255, 0.5);
+            border: 2px solid rgba(100, 180, 255, 0.8);
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            touch-action: none;
+            transition: none;
+        }
+        .fire-btn {
+            position: absolute;
+            width: 18%;
+            aspect-ratio: 1/1;
+            bottom: 10%;
+            right: 8%;
+            border-radius: 50%;
+            background: radial-gradient(circle, #ff6644, #cc2200);
+            border: 3px solid #ffaa44;
+            color: white;
+            font-size: 1.8rem;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            pointer-events: auto;
+            touch-action: manipulation;
+            box-shadow: 0 0 30px rgba(255, 50, 0, 0.5);
+            cursor: pointer;
+            text-shadow: 0 0 10px rgba(255,255,200,0.8);
+            user-select: none;
+        }
+        .fire-btn:active {
+            transform: scale(0.92);
+            box-shadow: 0 0 50px rgba(255, 50, 0, 0.8);
+        }
+
+        /* HUD */
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #aac;
+            font-size: 1rem;
+            font-family: monospace;
+            z-index: 15;
+            pointer-events: none;
+            text-shadow: 0 0 10px #000;
+            line-height: 1.6;
+        }
+        #hud .timer {
+            font-size: 1.6rem;
+            color: #ffcc44;
+        }
+
+        /* Responsive scaling */
+        @media (max-width: 600px) {
+            #menu h1 { font-size: 2.4rem; }
+            .menu-btn { font-size: 1.2rem; padding: 12px 28px; min-width: 160px; }
+            .fire-btn { font-size: 1.2rem; }
+            #hud { font-size: 0.8rem; }
+            #hud .timer { font-size: 1.2rem; }
         }
     </style>
 </head>
 <body>
-    <div id="ui">🔫 SNIPER MECHA 1v1</div>
-    <div id="controls">WASD move · Mouse aim · Click to shoot</div>
-    <canvas id="gameCanvas" width="900" height="600"></canvas>
+
+    <div id="gameWrapper">
+        <canvas id="gameCanvas" width="900" height="600"></canvas>
+
+        <!-- Menu -->
+        <div id="menu">
+            <h1>🔫 SNIPER MECHA</h1>
+            <p>1v1 · BGMI WOW Style</p>
+            <button class="menu-btn" id="playBtn">▶ Play vs Bot</button>
+            <button class="menu-btn disabled" id="multiBtn">🌐 Online (coming soon)</button>
+        </div>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div>HP: <span id="hudPlayerHP">100</span></div>
+            <div>Enemy: <span id="hudEnemyHP">100</span></div>
+            <div class="timer">⏱ <span id="hudTimer">60</span>s</div>
+        </div>
+
+        <!-- Touch Controls -->
+        <div id="controlsOverlay">
+            <div class="joystick-area" id="moveJoystickArea">
+                <div class="joystick-base" id="moveJoystickBase">
+                    <div class="joystick-thumb" id="moveJoystickThumb"></div>
+                </div>
+            </div>
+            <div class="fire-btn" id="fireBtn">🔥</div>
+        </div>
+    </div>
+
     <script>
+        // ===== DOM refs =====
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
+        const menu = document.getElementById('menu');
+        const playBtn = document.getElementById('playBtn');
+        const multiBtn = document.getElementById('multiBtn');
+        const hudPlayerHP = document.getElementById('hudPlayerHP');
+        const hudEnemyHP = document.getElementById('hudEnemyHP');
+        const hudTimer = document.getElementById('hudTimer');
+        const controlsOverlay = document.getElementById('controlsOverlay');
+        const moveJoystickArea = document.getElementById('moveJoystickArea');
+        const moveJoystickBase = document.getElementById('moveJoystickBase');
+        const moveJoystickThumb = document.getElementById('moveJoystickThumb');
+        const fireBtn = document.getElementById('fireBtn');
 
-        // Player 1 (human)
+        // ===== Canvas dimensions (logical) =====
+        const W = 900, H = 600;
+
+        // ===== Game state =====
+        const STATE = { MENU: 0, COUNTDOWN: 1, PLAYING: 2, GAMEOVER: 3 };
+        let gameState = STATE.MENU;
+        let countdown = 3; // 3,2,1
+        let matchTime = 60; // seconds
+        let matchTimerInterval = null;
+
+        // ===== Players =====
         const player = {
             x: 150, y: 300,
             radius: 20,
@@ -68,11 +272,9 @@
             maxHealth: 100,
             angle: 0,
             cooldown: 0,
-            shootCooldown: 40, // frames
+            shootCooldown: 40,
             alive: true
         };
-
-        // Player 2 (AI)
         const enemy = {
             x: 750, y: 300,
             radius: 20,
@@ -83,16 +285,14 @@
             cooldown: 0,
             shootCooldown: 50,
             alive: true,
-            state: 'idle', // idle, chase, retreat
+            state: 'idle',
             timer: 0
         };
 
-        // Bullets
         let bullets = [];
         const bulletSpeed = 8;
         const bulletRadius = 4;
 
-        // Obstacles
         const obstacles = [
             { x: 350, y: 200, w: 60, h: 40 },
             { x: 500, y: 380, w: 40, h: 60 },
@@ -101,26 +301,23 @@
             { x: 450, y: 280, w: 20, h: 20 }
         ];
 
-        // Keys
+        // ===== Input =====
         const keys = { w: false, a: false, s: false, d: false };
-
-        // Mouse
-        let mouseX = player.x;
-        let mouseY = player.y;
+        let mouseX = player.x, mouseY = player.y;
         let mouseDown = false;
 
-        // Canvas size
-        const W = 900, H = 600;
+        // Touch joystick
+        let joystickActive = false;
+        let joystickDX = 0, joystickDY = 0;
+        let touchFire = false;
 
-        // Helper: distance
+        // ===== Helpers =====
         function dist(x1, y1, x2, y2) {
             return Math.hypot(x2 - x1, y2 - y1);
         }
 
-        // Check collision with obstacles
         function collidesWithObstacles(x, y, r) {
             for (let o of obstacles) {
-                // Circle vs rectangle (approximate)
                 const closestX = Math.max(o.x, Math.min(x, o.x + o.w));
                 const closestY = Math.max(o.y, Math.min(y, o.y + o.h));
                 if (dist(x, y, closestX, closestY) < r) return true;
@@ -128,26 +325,17 @@
             return false;
         }
 
-        // Check if a point is inside canvas
-        function inCanvas(x, y) {
-            return x >= 0 && x <= W && y >= 0 && y <= H;
-        }
-
-        // Player movement
         function movePlayer(p, dx, dy) {
             let nx = p.x + dx;
             let ny = p.y + dy;
-            // Keep within bounds
             if (nx - p.radius < 0) nx = p.radius;
             if (nx + p.radius > W) nx = W - p.radius;
             if (ny - p.radius < 0) ny = p.radius;
             if (ny + p.radius > H) ny = H - p.radius;
-            // Check obstacles
             if (!collidesWithObstacles(nx, ny, p.radius)) {
                 p.x = nx;
                 p.y = ny;
             } else {
-                // Try sliding along axes
                 if (!collidesWithObstacles(nx, p.y, p.radius)) {
                     p.x = nx;
                 } else if (!collidesWithObstacles(p.x, ny, p.radius)) {
@@ -156,7 +344,6 @@
             }
         }
 
-        // Shoot bullet
         function shoot(shooter, targetX, targetY, isEnemy = false) {
             if (shooter.cooldown > 0) return;
             const angle = Math.atan2(targetY - shooter.y, targetX - shooter.x);
@@ -173,21 +360,14 @@
             shooter.cooldown = shooter.shootCooldown;
         }
 
-        // AI logic
+        // ===== AI =====
         function updateAI() {
             if (!enemy.alive) return;
-            // AI aims at player
             enemy.angle = Math.atan2(player.y - enemy.y, player.x - enemy.x);
-
-            // State machine
             const distToPlayer = dist(enemy.x, enemy.y, player.x, player.y);
-            if (distToPlayer > 500) {
-                enemy.state = 'chase';
-            } else if (distToPlayer < 250) {
-                enemy.state = 'retreat';
-            } else {
-                enemy.state = 'idle';
-            }
+            if (distToPlayer > 500) enemy.state = 'chase';
+            else if (distToPlayer < 250) enemy.state = 'retreat';
+            else enemy.state = 'idle';
 
             let dx = 0, dy = 0;
             if (enemy.state === 'chase') {
@@ -197,7 +377,6 @@
                 dx = -Math.cos(enemy.angle) * enemy.speed * 0.7;
                 dy = -Math.sin(enemy.angle) * enemy.speed * 0.7;
             } else {
-                // idle: strafe a bit
                 if (enemy.timer % 120 < 60) {
                     dx = Math.cos(enemy.angle + Math.PI/2) * 0.8;
                     dy = Math.sin(enemy.angle + Math.PI/2) * 0.8;
@@ -207,57 +386,65 @@
                 }
             }
             movePlayer(enemy, dx, dy);
-
-            // Shoot if player in line of sight and angle is close
             if (distToPlayer < 600 && Math.abs(Math.atan2(player.y - enemy.y, player.x - enemy.x) - enemy.angle) < 0.2) {
                 shoot(enemy, player.x, player.y, true);
             }
-
-            // Update timer
             enemy.timer++;
         }
 
-        // Update game
+        // ===== Update =====
         function update() {
-            // Cooldowns
+            if (gameState !== STATE.PLAYING) return;
+
             if (player.cooldown > 0) player.cooldown--;
             if (enemy.cooldown > 0) enemy.cooldown--;
 
-            // Player movement
+            // Player movement (keyboard)
             let dx = 0, dy = 0;
             if (keys.w) dy -= player.speed;
             if (keys.s) dy += player.speed;
             if (keys.a) dx -= player.speed;
             if (keys.d) dx += player.speed;
+            // Joystick
+            if (joystickActive) {
+                const mag = Math.hypot(joystickDX, joystickDY);
+                if (mag > 0.1) {
+                    const normDX = joystickDX / mag;
+                    const normDY = joystickDY / mag;
+                    const speed = Math.min(mag, 1) * player.speed;
+                    dx += normDX * speed;
+                    dy += normDY * speed;
+                }
+            }
             if (dx !== 0 || dy !== 0) {
                 const len = Math.hypot(dx, dy);
-                dx = dx / len * player.speed;
-                dy = dy / len * player.speed;
+                dx = dx / len * Math.min(len, player.speed);
+                dy = dy / len * Math.min(len, player.speed);
                 movePlayer(player, dx, dy);
             }
 
-            // Player aim
-            player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
-
-            // Player shoot
-            if (mouseDown && player.alive) {
-                shoot(player, mouseX, mouseY, false);
+            // Aim (mouse or auto-aim for touch)
+            if (mouseDown || touchFire) {
+                // Aim at enemy for auto-aim
+                const targetX = enemy.alive ? enemy.x : mouseX;
+                const targetY = enemy.alive ? enemy.y : mouseY;
+                player.angle = Math.atan2(targetY - player.y, targetX - player.x);
+                if (player.alive) {
+                    shoot(player, targetX, targetY, false);
+                }
+            } else {
+                // Use mouse aim if not firing
+                player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
             }
 
-            // Update AI
             updateAI();
 
-            // Update bullets
+            // Bullets
             for (let b of bullets) {
                 if (!b.alive) continue;
                 b.x += b.vx;
                 b.y += b.vy;
-                // Remove if out of canvas
-                if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) {
-                    b.alive = false;
-                    continue;
-                }
-                // Check obstacle collision
+                if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { b.alive = false; continue; }
                 let hitObstacle = false;
                 for (let o of obstacles) {
                     if (b.x >= o.x && b.x <= o.x + o.w && b.y >= o.y && b.y <= o.y + o.h) {
@@ -265,19 +452,12 @@
                         break;
                     }
                 }
-                if (hitObstacle) {
-                    b.alive = false;
-                    continue;
-                }
-                // Check hit player/enemy
+                if (hitObstacle) { b.alive = false; continue; }
                 if (!b.isEnemy && b.alive && enemy.alive) {
                     if (dist(b.x, b.y, enemy.x, enemy.y) < enemy.radius + b.radius) {
                         enemy.health -= 35;
                         b.alive = false;
-                        if (enemy.health <= 0) {
-                            enemy.health = 0;
-                            enemy.alive = false;
-                        }
+                        if (enemy.health <= 0) { enemy.health = 0; enemy.alive = false; }
                         continue;
                     }
                 }
@@ -285,43 +465,35 @@
                     if (dist(b.x, b.y, player.x, player.y) < player.radius + b.radius) {
                         player.health -= 35;
                         b.alive = false;
-                        if (player.health <= 0) {
-                            player.health = 0;
-                            player.alive = false;
-                        }
+                        if (player.health <= 0) { player.health = 0; player.alive = false; }
                         continue;
                     }
                 }
             }
-
-            // Clean dead bullets
             bullets = bullets.filter(b => b.alive);
 
-            // Reset game if one is dead? auto restart after 3 sec
-            if (!player.alive || !enemy.alive) {
-                // Show winner message and restart
-                if (!window.gameOver) {
-                    window.gameOver = true;
-                    setTimeout(() => {
-                        // Reset
-                        player.health = player.maxHealth;
-                        player.alive = true;
-                        player.x = 150; player.y = 300;
-                        enemy.health = enemy.maxHealth;
-                        enemy.alive = true;
-                        enemy.x = 750; enemy.y = 300;
-                        bullets = [];
-                        window.gameOver = false;
-                    }, 2000);
-                }
+            // Update HUD
+            hudPlayerHP.textContent = Math.ceil(player.health);
+            hudEnemyHP.textContent = Math.ceil(enemy.health);
+            hudTimer.textContent = Math.ceil(matchTime);
+
+            // Check win/lose
+            if (!player.alive || !enemy.alive || matchTime <= 0) {
+                gameState = STATE.GAMEOVER;
+                clearInterval(matchTimerInterval);
+                controlsOverlay.classList.remove('active');
+                // Show game over after short delay
+                setTimeout(() => {
+                    showGameOver();
+                }, 300);
             }
         }
 
-        // Draw
+        // ===== Draw =====
         function draw() {
             ctx.clearRect(0, 0, W, H);
 
-            // Draw grid
+            // Grid
             ctx.strokeStyle = '#1a1a3a';
             ctx.lineWidth = 1;
             for (let i = 0; i < W; i += 40) {
@@ -337,7 +509,7 @@
                 ctx.stroke();
             }
 
-            // Draw obstacles
+            // Obstacles
             ctx.fillStyle = '#2a2a5a';
             ctx.shadowColor = '#4a4a8a';
             ctx.shadowBlur = 10;
@@ -346,7 +518,7 @@
             }
             ctx.shadowBlur = 0;
 
-            // Draw bullets
+            // Bullets
             for (let b of bullets) {
                 ctx.beginPath();
                 ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
@@ -357,12 +529,10 @@
                 ctx.shadowBlur = 0;
             }
 
-            // Draw players (mechs)
-            function drawMech(p, color, isEnemy = false) {
+            function drawMech(p, color) {
                 if (!p.alive) return;
                 ctx.save();
                 ctx.translate(p.x, p.y);
-                // Body
                 const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, p.radius);
                 grad.addColorStop(0, color);
                 grad.addColorStop(1, '#1a1a2a');
@@ -373,13 +543,11 @@
                 ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.shadowBlur = 0;
-                // Gun (sniper barrel)
                 ctx.rotate(p.angle);
                 ctx.fillStyle = '#888';
                 ctx.fillRect(p.radius - 5, -4, 30, 8);
                 ctx.fillStyle = '#aaa';
                 ctx.fillRect(p.radius + 20, -2, 10, 4);
-                // Scope indicator
                 ctx.fillStyle = '#ffcc00';
                 ctx.beginPath();
                 ctx.arc(p.radius - 2, 0, 4, 0, Math.PI * 2);
@@ -401,55 +569,132 @@
                 ctx.strokeRect(barX, barY, barW, barH);
             }
 
-            drawMech(player, '#44aaff', false);
-            drawMech(enemy, '#ff6644', true);
+            drawMech(player, '#44aaff');
+            drawMech(enemy, '#ff6644');
 
-            // Crosshair
-            ctx.strokeStyle = '#ff4444';
-            ctx.lineWidth = 2;
-            const cx = mouseX, cy = mouseY;
-            const size = 12;
-            ctx.beginPath();
-            ctx.moveTo(cx - size, cy);
-            ctx.lineTo(cx - 4, cy);
-            ctx.moveTo(cx + 4, cy);
-            ctx.lineTo(cx + size, cy);
-            ctx.moveTo(cx, cy - size);
-            ctx.lineTo(cx, cy - 4);
-            ctx.moveTo(cx, cy + 4);
-            ctx.lineTo(cx, cy + size);
-            ctx.stroke();
-            ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-            ctx.beginPath();
-            ctx.arc(cx, cy, 12, 0, Math.PI * 2);
-            ctx.stroke();
+            // Crosshair (only if not touch firing)
+            if (!touchFire) {
+                ctx.strokeStyle = '#ff4444';
+                ctx.lineWidth = 2;
+                const cx = mouseX, cy = mouseY;
+                const size = 12;
+                ctx.beginPath();
+                ctx.moveTo(cx - size, cy); ctx.lineTo(cx - 4, cy);
+                ctx.moveTo(cx + 4, cy); ctx.lineTo(cx + size, cy);
+                ctx.moveTo(cx, cy - size); ctx.lineTo(cx, cy - 4);
+                ctx.moveTo(cx, cy + 4); ctx.lineTo(cx, cy + size);
+                ctx.stroke();
+                ctx.fillStyle = 'rgba(255,255,255,0.2)';
+                ctx.beginPath();
+                ctx.arc(cx, cy, 12, 0, Math.PI*2);
+                ctx.stroke();
+            }
 
-            // Status
+            // Countdown overlay
+            if (gameState === STATE.COUNTDOWN) {
+                ctx.fillStyle = 'rgba(0,0,0,0.5)';
+                ctx.fillRect(0, 0, W, H);
+                ctx.fillStyle = '#ffffff';
+                ctx.font = '80px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(countdown > 0 ? countdown : 'GO!', W/2, H/2);
+            }
+
+            // Game over overlay (handled by showGameOver)
+        }
+
+        function showGameOver() {
+            const winner = player.health > enemy.health ? 'You' : (enemy.health > player.health ? 'Enemy' : 'Draw');
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(0, 0, W, H);
+            ctx.fillStyle = winner === 'You' ? '#44ff44' : '#ff4444';
+            ctx.font = '60px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(winner === 'You' ? '🏆 YOU WIN!' : (winner === 'Draw' ? '🤝 DRAW' : '💀 YOU LOSE'), W/2, H/2 - 40);
             ctx.fillStyle = '#aac';
-            ctx.font = '16px monospace';
-            ctx.fillText(`Player HP: ${Math.ceil(player.health)}`, 20, 40);
-            ctx.fillText(`Enemy HP: ${Math.ceil(enemy.health)}`, 20, 70);
-
-            if (!player.alive) {
-                ctx.fillStyle = '#ff4444';
-                ctx.font = '48px sans-serif';
-                ctx.fillText('YOU LOSE', W/2 - 120, H/2 - 20);
-            }
-            if (!enemy.alive) {
-                ctx.fillStyle = '#44ff44';
-                ctx.font = '48px sans-serif';
-                ctx.fillText('YOU WIN!', W/2 - 120, H/2 - 20);
-            }
+            ctx.font = '28px sans-serif';
+            ctx.fillText('Tap anywhere to continue', W/2, H/2 + 60);
+            // Set up tap to return to menu
+            const handler = () => {
+                document.removeEventListener('click', handler);
+                document.removeEventListener('touchstart', handler);
+                resetToMenu();
+            };
+            document.addEventListener('click', handler);
+            document.addEventListener('touchstart', handler);
         }
 
-        // Game loop
-        function gameLoop() {
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
+        function resetToMenu() {
+            // Reset game state
+            gameState = STATE.MENU;
+            menu.classList.remove('hidden');
+            controlsOverlay.classList.remove('active');
+            clearInterval(matchTimerInterval);
+            // Reset players
+            player.health = player.maxHealth;
+            player.alive = true;
+            player.x = 150; player.y = 300;
+            enemy.health = enemy.maxHealth;
+            enemy.alive = true;
+            enemy.x = 750; enemy.y = 300;
+            bullets = [];
+            matchTime = 60;
+            hudTimer.textContent = '60';
+            hudPlayerHP.textContent = '100';
+            hudEnemyHP.textContent = '100';
+            mouseDown = false;
+            touchFire = false;
+            joystickActive = false;
+            joystickDX = 0; joystickDY = 0;
+            moveJoystickThumb.style.transform = 'translate(-50%, -50%)';
         }
 
-        // Event listeners
+        function startGame() {
+            menu.classList.add('hidden');
+            controlsOverlay.classList.add('active');
+            // Reset game
+            player.health = player.maxHealth;
+            player.alive = true;
+            player.x = 150; player.y = 300;
+            enemy.health = enemy.maxHealth;
+            enemy.alive = true;
+            enemy.x = 750; enemy.y = 300;
+            bullets = [];
+            matchTime = 60;
+            hudTimer.textContent = '60';
+            hudPlayerHP.textContent = '100';
+            hudEnemyHP.textContent = '100';
+            mouseDown = false;
+            touchFire = false;
+            joystickActive = false;
+            joystickDX = 0; joystickDY = 0;
+            moveJoystickThumb.style.transform = 'translate(-50%, -50%)';
+
+            // Countdown
+            gameState = STATE.COUNTDOWN;
+            countdown = 3;
+            const interval = setInterval(() => {
+                countdown--;
+                if (countdown < 0) {
+                    clearInterval(interval);
+                    gameState = STATE.PLAYING;
+                    // Start match timer
+                    matchTimerInterval = setInterval(() => {
+                        matchTime--;
+                        if (matchTime <= 0) {
+                            matchTime = 0;
+                            // Game over will be triggered in update
+                        }
+                    }, 1000);
+                }
+            }, 1000);
+        }
+
+        // ===== Event Listeners =====
+
+        // Keyboard
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
             if (key === 'w' || key === 'a' || key === 's' || key === 'd') {
@@ -465,17 +710,16 @@
             }
         });
 
+        // Mouse
         canvas.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
             mouseX = (e.clientX - rect.left) * scaleX;
             mouseY = (e.clientY - rect.top) * scaleY;
-            // Clamp
             mouseX = Math.max(0, Math.min(W, mouseX));
             mouseY = Math.max(0, Math.min(H, mouseY));
         });
-
         canvas.addEventListener('mousedown', (e) => {
             if (e.button === 0) {
                 mouseDown = true;
@@ -490,8 +734,131 @@
         });
         canvas.addEventListener('contextmenu', (e) => e.preventDefault());
 
-        // Start
+        // Touch joystick
+        function handleJoystickStart(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            if (!touch) return;
+            const rect = moveJoystickBase.getBoundingClientRect();
+            const cx = rect.left + rect.width/2;
+            const cy = rect.top + rect.height/2;
+            const dx = touch.clientX - cx;
+            const dy = touch.clientY - cy;
+            const maxRadius = rect.width/2;
+            const mag = Math.hypot(dx, dy);
+            const clampedMag = Math.min(mag, maxRadius);
+            const angle = Math.atan2(dy, dx);
+            const thumbX = clampedMag * Math.cos(angle);
+            const thumbY = clampedMag * Math.sin(angle);
+            moveJoystickThumb.style.transform = `translate(${thumbX - 25}px, ${thumbY - 25}px)`;
+            joystickActive = true;
+            joystickDX = dx / maxRadius;
+            joystickDY = dy / maxRadius;
+            const clamp = (v) => Math.min(1, Math.max(-1, v));
+            joystickDX = clamp(joystickDX);
+            joystickDY = clamp(joystickDY);
+        }
+
+        function handleJoystickMove(e) {
+            e.preventDefault();
+            const touch = e.touches[0];
+            if (!touch) return;
+            const rect = moveJoystickBase.getBoundingClientRect();
+            const cx = rect.left + rect.width/2;
+            const cy = rect.top + rect.height/2;
+            const dx = touch.clientX - cx;
+            const dy = touch.clientY - cy;
+            const maxRadius = rect.width/2;
+            const mag = Math.hypot(dx, dy);
+            const clampedMag = Math.min(mag, maxRadius);
+            const angle = Math.atan2(dy, dx);
+            const thumbX = clampedMag * Math.cos(angle);
+            const thumbY = clampedMag * Math.sin(angle);
+            moveJoystickThumb.style.transform = `translate(${thumbX - 25}px, ${thumbY - 25}px)`;
+            joystickActive = true;
+            joystickDX = dx / maxRadius;
+            joystickDY = dy / maxRadius;
+            const clamp = (v) => Math.min(1, Math.max(-1, v));
+            joystickDX = clamp(joystickDX);
+            joystickDY = clamp(joystickDY);
+        }
+
+        function handleJoystickEnd(e) {
+            e.preventDefault();
+            moveJoystickThumb.style.transform = 'translate(-50%, -50%)';
+            joystickActive = false;
+            joystickDX = 0;
+            joystickDY = 0;
+        }
+
+        moveJoystickArea.addEventListener('touchstart', handleJoystickStart);
+        moveJoystickArea.addEventListener('touchmove', handleJoystickMove);
+        moveJoystickArea.addEventListener('touchend', handleJoystickEnd);
+        moveJoystickArea.addEventListener('touchcancel', handleJoystickEnd);
+
+        // Fire button
+        fireBtn.addEventListener('touchstart', (e) => {
+            e.preventDefault();
+            touchFire = true;
+            // Auto-aim at enemy if alive
+            if (enemy.alive) {
+                player.angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+            }
+        });
+        fireBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            touchFire = false;
+        });
+        fireBtn.addEventListener('touchcancel', (e) => {
+            touchFire = false;
+        });
+        // Also mouse click on fire button (for desktop touchpad)
+        fireBtn.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            touchFire = true;
+            if (enemy.alive) {
+                player.angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
+            }
+        });
+        fireBtn.addEventListener('mouseup', (e) => {
+            e.preventDefault();
+            touchFire = false;
+        });
+
+        // Menu buttons
+        playBtn.addEventListener('click', startGame);
+        playBtn.addEventListener('touchend', (e) => { e.preventDefault(); startGame(); });
+        multiBtn.addEventListener('click', () => {});
+        multiBtn.addEventListener('touchend', (e) => { e.preventDefault(); });
+
+        // ===== Game loop =====
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
         gameLoop();
+
+        // Handle resize to keep canvas aspect ratio
+        function resizeGame() {
+            const wrapper = document.getElementById('gameWrapper');
+            const maxWidth = window.innerWidth;
+            const maxHeight = window.innerHeight;
+            const aspect = 900 / 600;
+            let w = maxWidth;
+            let h = w / aspect;
+            if (h > maxHeight) {
+                h = maxHeight;
+                w = h * aspect;
+            }
+            wrapper.style.width = w + 'px';
+            wrapper.style.height = h + 'px';
+        }
+        window.addEventListener('resize', resizeGame);
+        resizeGame();
+
+        // Start with menu visible
+        resetToMenu();
     </script>
 </body>
 </html>
