@@ -200,7 +200,7 @@ function startCountdown(roomName, room) {
     const idx = room.playerIndex.get(id) ?? 0;
     const s = spawnFor(idx);
     const st = room.state.get(id);
-    if (st) { st.x = s.x; st.y = s.y; }
+    if (st) { st.x = s.x; st.y = s.y; st.h = 0; }
   }
   room.bullets = [];
   let remaining = COUNTDOWN_SECONDS;
@@ -297,7 +297,7 @@ io.on('connection', (socket) => {
       room.scores.set(socket.id, 0);
       room.hp.set(socket.id, { hp: MAX_HEALTH, alive: true, lastFire: 0 });
       const s = spawnFor(idx);
-      room.state.set(socket.id, { x: s.x, y: s.y, facingRight: true, angle: 0, skin: 'commando' });
+      room.state.set(socket.id, { x: s.x, y: s.y, facingRight: true, angle: 0, skin: 'commando', h: 0 });
       room.names.set(socket.id, playerName || `P${idx + 1}`);
     } else if (playerName) {
       room.names.set(socket.id, playerName);
@@ -404,6 +404,15 @@ io.on('connection', (socket) => {
       facingRight: !!state.facingRight,
       angle: Number(state.angle) || 0,
       skin: validSkin(state.skin),
+      h: (() => {
+        let h = Number(state.h) || 0;
+        h = Math.max(0, Math.min(2.6, h));
+        if (cur && Number.isFinite(cur.h)) {
+          const dh = h - cur.h;
+          if (Math.abs(dh) > 1.0) h = cur.h + Math.sign(dh) * 1.0;
+        }
+        return h;
+      })(),
     });
   });
 
@@ -530,7 +539,7 @@ setInterval(() => {
               const hp2 = r.hp.get(id);
               if (hp2) { hp2.hp = MAX_HEALTH; hp2.alive = true; }
               const st2 = r.state.get(id);
-              if (st2) { st2.x = s.x; st2.y = s.y; }
+              if (st2) { st2.x = s.x; st2.y = s.y; st2.h = 0; }
             }, RESPAWN_MS);
           }
           hit = true;
@@ -553,6 +562,7 @@ setInterval(() => {
           angle: st.angle,
           facingRight: st.facingRight,
           skin: validSkin(st.skin),
+          h: Number(st.h) || 0,
         });
       }
     }
