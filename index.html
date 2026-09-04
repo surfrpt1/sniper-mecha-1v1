@@ -128,6 +128,7 @@
             left: 5%;
             pointer-events: auto;
             touch-action: none;
+            transition: all 0.1s;
         }
         .joystick-base {
             width: 100%;
@@ -172,6 +173,7 @@
             cursor: pointer;
             text-shadow: 0 0 10px rgba(255,255,200,0.8);
             user-select: none;
+            transition: all 0.1s;
         }
         .fire-btn:active {
             transform: scale(0.92);
@@ -195,6 +197,148 @@
             font-size: 1.6rem;
             color: #ffcc44;
         }
+        #settingsBtn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            z-index: 16;
+            background: rgba(0,0,0,0.5);
+            border: 1px solid #3a5a7a;
+            color: #ccddff;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            pointer-events: auto;
+            touch-action: manipulation;
+            transition: 0.2s;
+        }
+        #settingsBtn:hover {
+            background: rgba(30,60,100,0.7);
+        }
+        #settingsBtn:active {
+            transform: scale(0.9);
+        }
+
+        /* Settings panel */
+        #settingsPanel {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(90%, 400px);
+            background: rgba(10,10,30,0.95);
+            border: 2px solid #3a5a8a;
+            border-radius: 20px;
+            padding: 24px 20px;
+            z-index: 30;
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            backdrop-filter: blur(8px);
+            pointer-events: auto;
+        }
+        #settingsPanel.show {
+            display: flex;
+        }
+        #settingsPanel h2 {
+            color: #88ccff;
+            font-size: 1.4rem;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .setting-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #aac;
+            font-size: 0.95rem;
+        }
+        .setting-row input[type="range"] {
+            width: 60%;
+            accent-color: #44aaff;
+            background: #1a2a3a;
+            height: 4px;
+            border-radius: 4px;
+            -webkit-appearance: none;
+        }
+        .setting-row input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #44aaff;
+            cursor: pointer;
+        }
+        .setting-row span {
+            min-width: 30px;
+            text-align: right;
+            color: #88ccff;
+        }
+        .settings-close-btn {
+            background: #2a3a5a;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 6px;
+            touch-action: manipulation;
+        }
+        .settings-close-btn:active {
+            transform: scale(0.96);
+        }
+        .settings-reset-btn {
+            background: #3a2a2a;
+            border: none;
+            color: #ff8866;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+
+        /* Game Over overlay (drawn on canvas, but we add a UI button) */
+        #gameOverMenu {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: rgba(0,0,0,0.65);
+            backdrop-filter: blur(4px);
+            border-radius: 12px;
+            z-index: 25;
+            pointer-events: auto;
+        }
+        #gameOverMenu.show {
+            display: flex;
+        }
+        #gameOverMenu h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 0 0 30px currentColor;
+        }
+        #gameOverMenu .sub {
+            color: #aac;
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+        }
+        #gameOverMenu .menu-btn {
+            min-width: 160px;
+            font-size: 1.2rem;
+            padding: 12px 28px;
+        }
 
         /* Responsive scaling */
         @media (max-width: 600px) {
@@ -203,6 +347,7 @@
             .fire-btn { font-size: 1.2rem; }
             #hud { font-size: 0.8rem; }
             #hud .timer { font-size: 1.2rem; }
+            #settingsBtn { width: 30px; height: 30px; font-size: 1rem; top: 8px; right: 8px; }
         }
     </style>
 </head>
@@ -219,11 +364,58 @@
             <button class="menu-btn disabled" id="multiBtn">🌐 Online (coming soon)</button>
         </div>
 
+        <!-- Game Over -->
+        <div id="gameOverMenu">
+            <h1 id="gameOverTitle">🏆 YOU WIN!</h1>
+            <div class="sub" id="gameOverSub">Match over</div>
+            <button class="menu-btn" id="gameOverReturnBtn">↩ Return to Menu</button>
+        </div>
+
         <!-- HUD -->
         <div id="hud">
             <div>HP: <span id="hudPlayerHP">100</span></div>
             <div>Enemy: <span id="hudEnemyHP">100</span></div>
             <div class="timer">⏱ <span id="hudTimer">60</span>s</div>
+        </div>
+
+        <!-- Settings Button -->
+        <div id="settingsBtn">⚙</div>
+
+        <!-- Settings Panel -->
+        <div id="settingsPanel">
+            <h2>⚙ Controls</h2>
+            <div class="setting-row">
+                <label>Joystick size</label>
+                <input type="range" id="joySizeSlider" min="15" max="45" value="30" step="1" />
+                <span id="joySizeVal">30%</span>
+            </div>
+            <div class="setting-row">
+                <label>Fire button size</label>
+                <input type="range" id="fireSizeSlider" min="10" max="30" value="18" step="1" />
+                <span id="fireSizeVal">18%</span>
+            </div>
+            <div class="setting-row">
+                <label>Joystick X offset</label>
+                <input type="range" id="joyXSlider" min="0" max="20" value="5" step="0.5" />
+                <span id="joyXVal">5%</span>
+            </div>
+            <div class="setting-row">
+                <label>Joystick Y offset</label>
+                <input type="range" id="joyYSlider" min="0" max="20" value="8" step="0.5" />
+                <span id="joyYVal">8%</span>
+            </div>
+            <div class="setting-row">
+                <label>Fire X offset</label>
+                <input type="range" id="fireXSlider" min="0" max="20" value="8" step="0.5" />
+                <span id="fireXVal">8%</span>
+            </div>
+            <div class="setting-row">
+                <label>Fire Y offset</label>
+                <input type="range" id="fireYSlider" min="0" max="20" value="10" step="0.5" />
+                <span id="fireYVal">10%</span>
+            </div>
+            <button class="settings-reset-btn" id="resetSettingsBtn">↺ Reset to default</button>
+            <button class="settings-close-btn" id="settingsCloseBtn">Close</button>
         </div>
 
         <!-- Touch Controls -->
@@ -252,6 +444,28 @@
         const moveJoystickBase = document.getElementById('moveJoystickBase');
         const moveJoystickThumb = document.getElementById('moveJoystickThumb');
         const fireBtn = document.getElementById('fireBtn');
+        const settingsBtn = document.getElementById('settingsBtn');
+        const settingsPanel = document.getElementById('settingsPanel');
+        const settingsCloseBtn = document.getElementById('settingsCloseBtn');
+        const resetSettingsBtn = document.getElementById('resetSettingsBtn');
+        const gameOverMenu = document.getElementById('gameOverMenu');
+        const gameOverTitle = document.getElementById('gameOverTitle');
+        const gameOverSub = document.getElementById('gameOverSub');
+        const gameOverReturnBtn = document.getElementById('gameOverReturnBtn');
+
+        // Settings sliders
+        const joySizeSlider = document.getElementById('joySizeSlider');
+        const fireSizeSlider = document.getElementById('fireSizeSlider');
+        const joyXSlider = document.getElementById('joyXSlider');
+        const joyYSlider = document.getElementById('joyYSlider');
+        const fireXSlider = document.getElementById('fireXSlider');
+        const fireYSlider = document.getElementById('fireYSlider');
+        const joySizeVal = document.getElementById('joySizeVal');
+        const fireSizeVal = document.getElementById('fireSizeVal');
+        const joyXVal = document.getElementById('joyXVal');
+        const joyYVal = document.getElementById('joyYVal');
+        const fireXVal = document.getElementById('fireXVal');
+        const fireYVal = document.getElementById('fireYVal');
 
         // ===== Canvas dimensions (logical) =====
         const W = 900, H = 600;
@@ -259,9 +473,10 @@
         // ===== Game state =====
         const STATE = { MENU: 0, COUNTDOWN: 1, PLAYING: 2, GAMEOVER: 3 };
         let gameState = STATE.MENU;
-        let countdown = 3; // 3,2,1
-        let matchTime = 60; // seconds
+        let countdown = 3;
+        let matchTime = 60;
         let matchTimerInterval = null;
+        let gameOverWinner = null; // 'player' or 'enemy' or 'draw' or 'timeout'
 
         // ===== Players =====
         const player = {
@@ -310,6 +525,70 @@
         let joystickActive = false;
         let joystickDX = 0, joystickDY = 0;
         let touchFire = false;
+
+        // Settings (stored in localStorage)
+        const defaultSettings = {
+            joySize: 30,
+            fireSize: 18,
+            joyX: 5,
+            joyY: 8,
+            fireX: 8,
+            fireY: 10
+        };
+        let settings = { ...defaultSettings };
+
+        function loadSettings() {
+            try {
+                const stored = JSON.parse(localStorage.getItem('sniperMechaSettings'));
+                if (stored) {
+                    for (let key in defaultSettings) {
+                        if (stored[key] !== undefined) settings[key] = stored[key];
+                    }
+                }
+            } catch(e) {}
+            applySettingsUI();
+            applySettingsToControls();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('sniperMechaSettings', JSON.stringify(settings));
+        }
+
+        function applySettingsUI() {
+            joySizeSlider.value = settings.joySize;
+            fireSizeSlider.value = settings.fireSize;
+            joyXSlider.value = settings.joyX;
+            joyYSlider.value = settings.joyY;
+            fireXSlider.value = settings.fireX;
+            fireYSlider.value = settings.fireY;
+            joySizeVal.textContent = settings.joySize + '%';
+            fireSizeVal.textContent = settings.fireSize + '%';
+            joyXVal.textContent = settings.joyX + '%';
+            joyYVal.textContent = settings.joyY + '%';
+            fireXVal.textContent = settings.fireX + '%';
+            fireYVal.textContent = settings.fireY + '%';
+        }
+
+        function applySettingsToControls() {
+            // Joystick area size (width relative to wrapper)
+            moveJoystickArea.style.width = settings.joySize + '%';
+            moveJoystickArea.style.aspectRatio = '1/1';
+            moveJoystickArea.style.bottom = settings.joyY + '%';
+            moveJoystickArea.style.left = settings.joyX + '%';
+
+            // Fire button size
+            fireBtn.style.width = settings.fireSize + '%';
+            fireBtn.style.aspectRatio = '1/1';
+            fireBtn.style.bottom = settings.fireY + '%';
+            fireBtn.style.right = settings.fireX + '%';
+        }
+
+        function resetSettingsToDefault() {
+            settings = { ...defaultSettings };
+            saveSettings();
+            applySettingsUI();
+            applySettingsToControls();
+        }
 
         // ===== Helpers =====
         function dist(x1, y1, x2, y2) {
@@ -399,13 +678,11 @@
             if (player.cooldown > 0) player.cooldown--;
             if (enemy.cooldown > 0) enemy.cooldown--;
 
-            // Player movement (keyboard)
             let dx = 0, dy = 0;
             if (keys.w) dy -= player.speed;
             if (keys.s) dy += player.speed;
             if (keys.a) dx -= player.speed;
             if (keys.d) dx += player.speed;
-            // Joystick
             if (joystickActive) {
                 const mag = Math.hypot(joystickDX, joystickDY);
                 if (mag > 0.1) {
@@ -423,9 +700,7 @@
                 movePlayer(player, dx, dy);
             }
 
-            // Aim (mouse or auto-aim for touch)
-            if (mouseDown || touchFire) {
-                // Aim at enemy for auto-aim
+            if (touchFire) {
                 const targetX = enemy.alive ? enemy.x : mouseX;
                 const targetY = enemy.alive ? enemy.y : mouseY;
                 player.angle = Math.atan2(targetY - player.y, targetX - player.x);
@@ -433,13 +708,11 @@
                     shoot(player, targetX, targetY, false);
                 }
             } else {
-                // Use mouse aim if not firing
                 player.angle = Math.atan2(mouseY - player.y, mouseX - player.x);
             }
 
             updateAI();
 
-            // Bullets
             for (let b of bullets) {
                 if (!b.alive) continue;
                 b.x += b.vx;
@@ -472,20 +745,23 @@
             }
             bullets = bullets.filter(b => b.alive);
 
-            // Update HUD
             hudPlayerHP.textContent = Math.ceil(player.health);
             hudEnemyHP.textContent = Math.ceil(enemy.health);
             hudTimer.textContent = Math.ceil(matchTime);
 
-            // Check win/lose
             if (!player.alive || !enemy.alive || matchTime <= 0) {
                 gameState = STATE.GAMEOVER;
                 clearInterval(matchTimerInterval);
-                controlsOverlay.classList.remove('active');
-                // Show game over after short delay
-                setTimeout(() => {
-                    showGameOver();
-                }, 300);
+                if (matchTime <= 0 && player.alive && enemy.alive) {
+                    gameOverWinner = 'timeout';
+                } else if (!player.alive) {
+                    gameOverWinner = 'enemy';
+                } else if (!enemy.alive) {
+                    gameOverWinner = 'player';
+                } else {
+                    gameOverWinner = 'draw';
+                }
+                showGameOver();
             }
         }
 
@@ -493,7 +769,6 @@
         function draw() {
             ctx.clearRect(0, 0, W, H);
 
-            // Grid
             ctx.strokeStyle = '#1a1a3a';
             ctx.lineWidth = 1;
             for (let i = 0; i < W; i += 40) {
@@ -509,7 +784,6 @@
                 ctx.stroke();
             }
 
-            // Obstacles
             ctx.fillStyle = '#2a2a5a';
             ctx.shadowColor = '#4a4a8a';
             ctx.shadowBlur = 10;
@@ -518,7 +792,6 @@
             }
             ctx.shadowBlur = 0;
 
-            // Bullets
             for (let b of bullets) {
                 ctx.beginPath();
                 ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
@@ -554,7 +827,6 @@
                 ctx.fill();
                 ctx.restore();
 
-                // Health bar
                 const barW = 50;
                 const barH = 6;
                 const barX = p.x - barW/2;
@@ -572,7 +844,6 @@
             drawMech(player, '#44aaff');
             drawMech(enemy, '#ff6644');
 
-            // Crosshair (only if not touch firing)
             if (!touchFire) {
                 ctx.strokeStyle = '#ff4444';
                 ctx.lineWidth = 2;
@@ -590,7 +861,6 @@
                 ctx.stroke();
             }
 
-            // Countdown overlay
             if (gameState === STATE.COUNTDOWN) {
                 ctx.fillStyle = 'rgba(0,0,0,0.5)';
                 ctx.fillRect(0, 0, W, H);
@@ -600,39 +870,47 @@
                 ctx.textBaseline = 'middle';
                 ctx.fillText(countdown > 0 ? countdown : 'GO!', W/2, H/2);
             }
-
-            // Game over overlay (handled by showGameOver)
         }
 
         function showGameOver() {
-            const winner = player.health > enemy.health ? 'You' : (enemy.health > player.health ? 'Enemy' : 'Draw');
-            ctx.fillStyle = 'rgba(0,0,0,0.6)';
-            ctx.fillRect(0, 0, W, H);
-            ctx.fillStyle = winner === 'You' ? '#44ff44' : '#ff4444';
-            ctx.font = '60px sans-serif';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(winner === 'You' ? '🏆 YOU WIN!' : (winner === 'Draw' ? '🤝 DRAW' : '💀 YOU LOSE'), W/2, H/2 - 40);
-            ctx.fillStyle = '#aac';
-            ctx.font = '28px sans-serif';
-            ctx.fillText('Tap anywhere to continue', W/2, H/2 + 60);
-            // Set up tap to return to menu
-            const handler = () => {
-                document.removeEventListener('click', handler);
-                document.removeEventListener('touchstart', handler);
-                resetToMenu();
-            };
-            document.addEventListener('click', handler);
-            document.addEventListener('touchstart', handler);
+            gameOverMenu.classList.add('show');
+            controlsOverlay.classList.remove('active');
+            let title = '', sub = '';
+            if (gameOverWinner === 'player') {
+                title = '🏆 YOU WIN!';
+                sub = 'You eliminated the enemy!';
+            } else if (gameOverWinner === 'enemy') {
+                title = '💀 YOU LOSE';
+                sub = 'Enemy eliminated you.';
+            } else if (gameOverWinner === 'timeout') {
+                if (player.health > enemy.health) {
+                    title = '🏆 YOU WIN!';
+                    sub = 'More health when time ran out.';
+                } else if (enemy.health > player.health) {
+                    title = '💀 YOU LOSE';
+                    sub = 'Enemy had more health.';
+                } else {
+                    title = '🤝 DRAW';
+                    sub = 'Equal health at time end.';
+                }
+            } else {
+                title = '🤝 DRAW';
+                sub = 'Match ended.';
+            }
+            gameOverTitle.textContent = title;
+            gameOverSub.textContent = sub;
+        }
+
+        function hideGameOver() {
+            gameOverMenu.classList.remove('show');
         }
 
         function resetToMenu() {
-            // Reset game state
+            hideGameOver();
             gameState = STATE.MENU;
             menu.classList.remove('hidden');
             controlsOverlay.classList.remove('active');
             clearInterval(matchTimerInterval);
-            // Reset players
             player.health = player.maxHealth;
             player.alive = true;
             player.x = 150; player.y = 300;
@@ -654,7 +932,7 @@
         function startGame() {
             menu.classList.add('hidden');
             controlsOverlay.classList.add('active');
-            // Reset game
+            hideGameOver();
             player.health = player.maxHealth;
             player.alive = true;
             player.x = 150; player.y = 300;
@@ -672,7 +950,6 @@
             joystickDX = 0; joystickDY = 0;
             moveJoystickThumb.style.transform = 'translate(-50%, -50%)';
 
-            // Countdown
             gameState = STATE.COUNTDOWN;
             countdown = 3;
             const interval = setInterval(() => {
@@ -680,12 +957,11 @@
                 if (countdown < 0) {
                     clearInterval(interval);
                     gameState = STATE.PLAYING;
-                    // Start match timer
                     matchTimerInterval = setInterval(() => {
                         matchTime--;
                         if (matchTime <= 0) {
                             matchTime = 0;
-                            // Game over will be triggered in update
+                            // game over triggered in update
                         }
                     }, 1000);
                 }
@@ -800,7 +1076,6 @@
         fireBtn.addEventListener('touchstart', (e) => {
             e.preventDefault();
             touchFire = true;
-            // Auto-aim at enemy if alive
             if (enemy.alive) {
                 player.angle = Math.atan2(enemy.y - player.y, enemy.x - player.x);
             }
@@ -812,7 +1087,6 @@
         fireBtn.addEventListener('touchcancel', (e) => {
             touchFire = false;
         });
-        // Also mouse click on fire button (for desktop touchpad)
         fireBtn.addEventListener('mousedown', (e) => {
             e.preventDefault();
             touchFire = true;
@@ -825,11 +1099,51 @@
             touchFire = false;
         });
 
+        // Settings
+        settingsBtn.addEventListener('click', () => {
+            settingsPanel.classList.toggle('show');
+        });
+        settingsBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            settingsPanel.classList.toggle('show');
+        });
+        settingsCloseBtn.addEventListener('click', () => {
+            settingsPanel.classList.remove('show');
+        });
+        settingsCloseBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            settingsPanel.classList.remove('show');
+        });
+        resetSettingsBtn.addEventListener('click', resetSettingsToDefault);
+        resetSettingsBtn.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            resetSettingsToDefault();
+        });
+
+        // Sliders
+        function updateSettingFromSlider(slider, key, displayEl) {
+            const val = parseFloat(slider.value);
+            settings[key] = val;
+            displayEl.textContent = val + '%';
+            saveSettings();
+            applySettingsToControls();
+        }
+        joySizeSlider.addEventListener('input', () => updateSettingFromSlider(joySizeSlider, 'joySize', joySizeVal));
+        fireSizeSlider.addEventListener('input', () => updateSettingFromSlider(fireSizeSlider, 'fireSize', fireSizeVal));
+        joyXSlider.addEventListener('input', () => updateSettingFromSlider(joyXSlider, 'joyX', joyXVal));
+        joyYSlider.addEventListener('input', () => updateSettingFromSlider(joyYSlider, 'joyY', joyYVal));
+        fireXSlider.addEventListener('input', () => updateSettingFromSlider(fireXSlider, 'fireX', fireXVal));
+        fireYSlider.addEventListener('input', () => updateSettingFromSlider(fireYSlider, 'fireY', fireYVal));
+
         // Menu buttons
         playBtn.addEventListener('click', startGame);
         playBtn.addEventListener('touchend', (e) => { e.preventDefault(); startGame(); });
         multiBtn.addEventListener('click', () => {});
         multiBtn.addEventListener('touchend', (e) => { e.preventDefault(); });
+
+        // Game Over return
+        gameOverReturnBtn.addEventListener('click', resetToMenu);
+        gameOverReturnBtn.addEventListener('touchend', (e) => { e.preventDefault(); resetToMenu(); });
 
         // ===== Game loop =====
         function gameLoop() {
@@ -839,7 +1153,7 @@
         }
         gameLoop();
 
-        // Handle resize to keep canvas aspect ratio
+        // Responsive resize
         function resizeGame() {
             const wrapper = document.getElementById('gameWrapper');
             const maxWidth = window.innerWidth;
@@ -857,7 +1171,8 @@
         window.addEventListener('resize', resizeGame);
         resizeGame();
 
-        // Start with menu visible
+        // Load settings and start
+        loadSettings();
         resetToMenu();
     </script>
 </body>
