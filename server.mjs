@@ -15,14 +15,20 @@ const TICK = 50; // ms, 20Hz
 const PLAYER_RADIUS = 1.2;
 const HIT_RADIUS = 1.5;
 const MAX_SPEED_UPS = 8; // units/sec (client runs ~5, tolerance for lag)
-const BULLET_SPEED = 32; // units/sec (crosses 36-unit map in ~1.1s)
-const BULLET_LIFE = 2.0;
-const BULLET_DAMAGE = 35;
-const FIRE_COOLDOWN_MS = 400;
 const KILL_LIMIT = 10;
 const COUNTDOWN_SECONDS = 5;
 const RESPAWN_MS = 2000;
 const WORLD_BOUNDS = 18;
+
+// Weapons (must match client WEAPONS)
+const WEAPONS = {
+  rifle: { dmg: 35, cooldown: 400, speed: 32, life: 2.0 },
+  smg: { dmg: 14, cooldown: 130, speed: 28, life: 1.4 },
+  sniper: { dmg: 70, cooldown: 950, speed: 55, life: 2.5 },
+};
+function weaponStats(id) {
+  return WEAPONS[id] || WEAPONS.rifle;
+}
 
 // Authoritative obstacles (must match client OBSTACLES for prediction)
 const OBSTACLES = [
@@ -404,18 +410,20 @@ io.on('connection', (socket) => {
     const st = room.state.get(socket.id);
     if (!st) return;
     const now = Date.now();
-    if (now - hp.lastFire < FIRE_COOLDOWN_MS) return;
+    const w = weaponStats(data && data.weapon);
+    const wid = (data && WEAPONS[data.weapon]) ? data.weapon : 'rifle';
+    if (now - hp.lastFire < w.cooldown) return;
     hp.lastFire = now;
 
     const angle = Number(data.angle) || 0;
     // Muzzle offset 1.5 units forward (matches client visual)
     const sx = st.x + Math.cos(angle) * 1.5;
     const sy = st.y + Math.sin(angle) * 1.5;
-    const vx = Math.cos(angle) * BULLET_SPEED;
-    const vy = Math.sin(angle) * BULLET_SPEED;
-    room.bullets.push({ owner: socket.id, x: sx, y: sy, vx, vy, life: BULLET_LIFE });
+    const vx = Math.cos(angle) * w.speed;
+    const vy = Math.sin(angle) * w.speed;
+    room.bullets.push({ owner: socket.id, x: sx, y: sy, vx, vy, life: w.life, dmg: w.dmg, weapon: wid });
 
-    socket.to(roomName).emit('fx-shot', { id: socket.id, x: sx, y: sy, angle });
+    socket.to(roomName).emit('fx-shot', { id: socket.id, x: sx, y: sy, angle, weapon: wid });
   });
 
   socket.on('disconnect', () => {
@@ -496,7 +504,7 @@ setInterval(() => {
         const dx = b.x - st.x;
         const dy = b.y - st.y;
         if (Math.hypot(dx, dy) < HIT_RADIUS + PLAYER_RADIUS) {
-          hp.hp -= BULLET_DAMAGE;
+          hp.hp -= (b.dmg || 35);
           // hit feedback to victim + killer
           const victimSock = io.sockets.sockets.get(id);
           if (victimSock) victimSock.emit('fx-hit', { hp: Math.max(0, hp.hp) });
@@ -542,7 +550,7 @@ setInterval(() => {
     }
     emitRoom(roomName, 'world-update', {
       players,
-      bullets: room.bullets.map(b => ({ x: b.x, y: b.y, owner: b.owner })),
+      bullets: room.bullets.map(b => ({ x: b.x, y: b.y, owner: b.owner, weapon: b.weapon || 'rifle' })),
       hp: hpSnapshot(roomName),
       scores: serializeScores(room),
     });
