@@ -30,6 +30,12 @@ function weaponStats(id) {
   return WEAPONS[id] || WEAPONS.rifle;
 }
 
+// Premium skins (must match client SKINS keys)
+const SKINS = ['commando', 'glacier', 'inferno', 'viper'];
+function validSkin(s) {
+  return SKINS.includes(s) ? s : 'commando';
+}
+
 // Authoritative obstacles (must match client OBSTACLES for prediction)
 const OBSTACLES = [
   { x: 0, z: 0, w: 4, h: 4 },
@@ -291,7 +297,7 @@ io.on('connection', (socket) => {
       room.scores.set(socket.id, 0);
       room.hp.set(socket.id, { hp: MAX_HEALTH, alive: true, lastFire: 0 });
       const s = spawnFor(idx);
-      room.state.set(socket.id, { x: s.x, y: s.y, facingRight: true, angle: 0 });
+      room.state.set(socket.id, { x: s.x, y: s.y, facingRight: true, angle: 0, skin: 'commando' });
       room.names.set(socket.id, playerName || `P${idx + 1}`);
     } else if (playerName) {
       room.names.set(socket.id, playerName);
@@ -397,6 +403,7 @@ io.on('connection', (socket) => {
       x, y,
       facingRight: !!state.facingRight,
       angle: Number(state.angle) || 0,
+      skin: validSkin(state.skin),
     });
   });
 
@@ -545,6 +552,7 @@ setInterval(() => {
           x: st.x, y: st.y,
           angle: st.angle,
           facingRight: st.facingRight,
+          skin: validSkin(st.skin),
         });
       }
     }

@@ -51,12 +51,13 @@
             text-align: center;
             padding: 0 16px;
         }
-        /* Weapon select */
-        #weaponBarMenu, #weaponBar {
+        /* Weapon + skin select */
+        #weaponBarMenu, #weaponBar, #skinBarMenu {
             display: flex;
             gap: 8px;
             justify-content: center;
             margin: 8px 0;
+            flex-wrap: wrap;
         }
         #weaponBar {
             position: absolute;
@@ -85,6 +86,28 @@
         }
         .weapon-btn small { display: block; font-size: 0.6rem; opacity: 0.9; }
         .weapon-btn.active { border-color: #ffdd44; background: rgba(255,200,50,0.3); transform: scale(1.05); }
+        .skin-btn {
+            border: 2px solid rgba(255,255,255,0.35);
+            background: rgba(255,255,255,0.12);
+            color: #fff;
+            border-radius: 12px;
+            padding: 6px 8px;
+            font-size: 1.3rem;
+            cursor: pointer;
+            text-align: center;
+            line-height: 1.1;
+            min-width: 56px;
+            touch-action: manipulation;
+        }
+        .skin-btn small { display: block; font-size: 0.58rem; opacity: 0.9; }
+        .skin-btn.active { border-color: #7fff9f; background: rgba(80,255,150,0.25); transform: scale(1.05); }
+        .skin-row {
+            display: flex;
+            gap: 6px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 4px;
+        }
         .menu-btn {
             background: #1a2a4a;
             border: 2px solid #3a6a9a;
@@ -409,6 +432,12 @@
                 <button class="weapon-btn" data-w="smg">🔥<small>SMG</small></button>
                 <button class="weapon-btn" data-w="sniper">🎯<small>Rail</small></button>
             </div>
+            <div id="skinBarMenu">
+                <button class="skin-btn active" data-s="commando">🪖<small>Commando</small></button>
+                <button class="skin-btn" data-s="glacier">❄️<small>Glacier</small></button>
+                <button class="skin-btn" data-s="inferno">🎀<small>Valkyrie</small></button>
+                <button class="skin-btn" data-s="viper">🌙<small>Nova</small></button>
+            </div>
             <button class="menu-btn" id="playBtn">▶ Play vs Bot</button>
             <button class="menu-btn" id="multiBtn">🌐 Online Multiplayer</button>
             <p style="font-size:0.75rem;opacity:0.9">WASD move · Mouse aim · Click shoot · 1/2/3 weapons · Mobile: left stick move, drag 🔥 to aim+fire</p>
@@ -469,6 +498,15 @@
             <div class="setting-row">
                 <label>Sound</label>
                 <button id="soundToggle">🔊</button>
+            </div>
+            <div class="setting-row" style="justify-content:center">
+                <label style="width:100%;text-align:center;margin-bottom:6px">Pilot skin</label>
+            </div>
+            <div class="skin-row">
+                <button class="skin-btn active" data-s="commando">🪖<small>Commando</small></button>
+                <button class="skin-btn" data-s="glacier">❄️<small>Glacier</small></button>
+                <button class="skin-btn" data-s="inferno">🎀<small>Valkyrie</small></button>
+                <button class="skin-btn" data-s="viper">🌙<small>Nova</small></button>
             </div>
             <button class="settings-close-btn" id="settingsMenuBtn" style="background:#7a2a2a">↩ Return to Menu</button>
             <button class="settings-close-btn" id="settingsCloseBtn">Close</button>
@@ -537,6 +575,31 @@
             document.querySelectorAll('.weapon-btn').forEach(b => b.classList.toggle('active', b.dataset.w === id));
             hudWeapon.textContent = `${WEAPONS[id].icon} ${WEAPONS[id].name}`;
             rebuildPlayerGun();
+        }
+
+        // ---------- Premium pilot skins (BGMI-style outfits, full tactical armor) ----------
+        const SKINS = {
+            commando: { name: 'Commando', icon: '🪖', color: 0x2299ff, trim: 0xffffff, hair: 'helmet', hairColor: 0x1a1a1a },
+            glacier: { name: 'Glacier', icon: '❄️', color: 0x9be8ff, trim: 0xffd700, hair: 'helmet', hairColor: 0x223344 },
+            inferno: { name: 'Valkyrie', icon: '🎀', color: 0xff5a3c, trim: 0xffd700, hair: 'ponytail', hairColor: 0x4a2a1a },
+            viper: { name: 'Nova', icon: '🌙', color: 0x8a5cff, trim: 0x7fff9f, hair: 'bun', hairColor: 0x111111 },
+        };
+        let currentSkin = localStorage.getItem('sniperMechaSkin') || 'commando';
+        if (!SKINS[currentSkin]) currentSkin = 'commando';
+        function setSkin(id) {
+            if (!SKINS[id]) return;
+            currentSkin = id;
+            localStorage.setItem('sniperMechaSkin', id);
+            document.querySelectorAll('.skin-btn').forEach(b => b.classList.toggle('active', b.dataset.s === id));
+            if (!player.mesh) return;
+            const sk = SKINS[id];
+            const px = player.mesh.position.x, pz = player.mesh.position.z, ry = player.mesh.rotation.y;
+            scene.remove(player.mesh);
+            player.mesh = createHumanoid(sk.color, currentWeapon, id);
+            player.mesh.position.set(px, -0.5, pz);
+            player.mesh.rotation.y = ry;
+            scene.add(player.mesh);
+            playerRing.material.color.set(sk.trim);
         }
 
         // ---------- Audio (no assets, WebAudio synth) ----------
@@ -750,38 +813,67 @@
             respawnAt: 0, kills: 0, strafeDir: 1, strafeT: 0,
         };
 
-        function createHumanoid(color, weaponId = 'rifle') {
+        function createHumanoid(color, weaponId = 'rifle', skinId = 'commando') {
             const group = new THREE.Group();
+            const sk = SKINS[skinId] || SKINS.commando;
             const suit = new THREE.MeshStandardMaterial({ color, roughness: 0.5, metalness: 0.25 });
             const dark = new THREE.MeshStandardMaterial({ color: 0x2a3550, roughness: 0.6, metalness: 0.3 });
             const skin = new THREE.MeshStandardMaterial({ color: 0xffc79a, roughness: 0.65 });
             const accent = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.4, emissive: color, emissiveIntensity: 0.25 });
+            const trim = new THREE.MeshStandardMaterial({ color: sk.trim, emissive: sk.trim, emissiveIntensity: 0.5, roughness: 0.35, metalness: 0.5 });
+            const hairMat = new THREE.MeshStandardMaterial({ color: sk.hairColor, roughness: 0.85 });
+            const female = sk.hair !== 'helmet';
             const ud = group.userData;
 
-            // pelvis + torso (vest)
+            // pelvis + torso (vest) — female frames slightly slimmer, same full coverage
+            const tw = female ? 0.7 : 0.78;
             const pelvis = new THREE.Mesh(new THREE.BoxGeometry(0.62, 0.32, 0.4), dark);
             pelvis.position.y = 0.95; pelvis.castShadow = true; group.add(pelvis);
-            const torso = new THREE.Mesh(new THREE.BoxGeometry(0.78, 0.72, 0.46), suit);
+            const torso = new THREE.Mesh(new THREE.BoxGeometry(tw, 0.72, 0.46), suit);
             torso.position.y = 1.45; torso.castShadow = true; group.add(torso);
-            const vest = new THREE.Mesh(new THREE.BoxGeometry(0.84, 0.4, 0.52), dark);
+            const vest = new THREE.Mesh(new THREE.BoxGeometry(tw + 0.06, 0.4, 0.52), dark);
             vest.position.y = 1.38; group.add(vest);
             const chestLight = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.12, 0.05), accent);
             chestLight.position.set(0, 1.55, 0.26); group.add(chestLight);
-            // backpack
+            // premium trim stripe across vest
+            const stripe = new THREE.Mesh(new THREE.BoxGeometry(tw + 0.08, 0.07, 0.54), trim);
+            stripe.position.y = 1.22; group.add(stripe);
+            // backpack with trim stripe
             const pack = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.55, 0.25), dark);
             pack.position.set(0, 1.45, -0.36); group.add(pack);
+            const packStripe = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.1, 0.27), trim);
+            packStripe.position.set(0, 1.55, -0.36); group.add(packStripe);
             // shoulder pads
             const padGeo = new THREE.SphereGeometry(0.22, 8, 8);
             const padL = new THREE.Mesh(padGeo, dark); padL.position.set(-0.52, 1.78, 0); group.add(padL);
             const padR = new THREE.Mesh(padGeo, dark); padR.position.set(0.52, 1.78, 0); group.add(padR);
 
-            // head: helmet + visor + neck
+            // head: helmet or tactical cap + hair, visor + neck
             const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.18, 8), skin);
             neck.position.y = 1.9; group.add(neck);
             const head = new THREE.Mesh(new THREE.SphereGeometry(0.32, 12, 12), skin);
             head.position.y = 2.15; head.castShadow = true; group.add(head);
-            const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.36, 12, 12, 0, Math.PI*2, 0, Math.PI*0.55), suit);
-            helmet.position.y = 2.2; group.add(helmet);
+            if (sk.hair === 'helmet') {
+                const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.36, 12, 12, 0, Math.PI*2, 0, Math.PI*0.55), suit);
+                helmet.position.y = 2.2; group.add(helmet);
+            } else {
+                // tactical cap + visible hair (BGMI-style female pilot)
+                const cap = new THREE.Mesh(new THREE.SphereGeometry(0.34, 12, 12, 0, Math.PI*2, 0, Math.PI*0.45), suit);
+                cap.position.y = 2.22; group.add(cap);
+                const hairCap = new THREE.Mesh(new THREE.SphereGeometry(0.335, 12, 12, 0, Math.PI*2, Math.PI*0.35, Math.PI*0.65), hairMat);
+                hairCap.position.y = 2.14; group.add(hairCap);
+                if (sk.hair === 'ponytail') {
+                    const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.13, 0.7, 8), hairMat);
+                    tail.position.set(0, 1.85, -0.42); tail.rotation.x = 0.35; tail.castShadow = true; group.add(tail);
+                    const tie = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 0.08, 8), trim);
+                    tie.position.set(0, 2.12, -0.35); tie.rotation.x = 0.35; group.add(tie);
+                } else if (sk.hair === 'bun') {
+                    const bun = new THREE.Mesh(new THREE.SphereGeometry(0.16, 10, 10), hairMat);
+                    bun.position.set(0, 2.42, -0.2); bun.castShadow = true; group.add(bun);
+                    const band = new THREE.Mesh(new THREE.TorusGeometry(0.15, 0.035, 8, 12), trim);
+                    band.position.set(0, 2.36, -0.18); band.rotation.x = 1.1; group.add(band);
+                }
+            }
             const visor = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.14, 0.1),
                 new THREE.MeshStandardMaterial({ color: 0x111122, emissive: 0x33ccff, emissiveIntensity: 0.9 }));
             visor.position.set(0, 2.16, 0.28); group.add(visor);
@@ -825,6 +917,7 @@
             ud.gun = gun;
             buildGunMesh(gun, weaponId);
             ud.walkPhase = Math.random() * 6;
+            ud.skinId = skinId;
             return group;
         }
         function buildGunMesh(gunGroup, weaponId) {
@@ -868,25 +961,45 @@
             group.position.y = -0.5 + (moving ? Math.abs(Math.sin(ud.walkPhase)) * 0.08 : 0);
         }
 
-        const playerGroup = createHumanoid(0x2299ff, currentWeapon);
+        const playerGroup = createHumanoid(SKINS[currentSkin].color, currentWeapon, currentSkin);
         playerGroup.position.set(player.x, -0.5, player.z);
         scene.add(playerGroup);
         player.mesh = playerGroup;
+
+        // premium selection rings under local player + bot
+        const playerRing = new THREE.Mesh(
+            new THREE.RingGeometry(1.3, 1.65, 32),
+            new THREE.MeshBasicMaterial({ color: SKINS[currentSkin].trim, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+        );
+        playerRing.rotation.x = -Math.PI/2;
+        scene.add(playerRing);
+        const botRing = new THREE.Mesh(
+            new THREE.RingGeometry(1.3, 1.65, 32),
+            new THREE.MeshBasicMaterial({ color: 0xff4444, transparent: true, opacity: 0.85, side: THREE.DoubleSide })
+        );
+        botRing.rotation.x = -Math.PI/2;
+        botRing.visible = false;
+        scene.add(botRing);
 
         // aim guide line (manual aim feedback)
         const aimGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3(0, 0, 7)]);
         const aimLine = new THREE.Line(aimGeo, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.6 }));
         scene.add(aimLine);
 
+        let botSkin = 'inferno';
         function ensureBotMesh() {
-            if (!bot.mesh) {
-                bot.mesh = createHumanoid(0xff5533, 'rifle');
+            if (!bot.mesh || bot.mesh.userData.skinId !== botSkin) {
+                if (bot.mesh) scene.remove(bot.mesh);
+                const sk = SKINS[botSkin] || SKINS.inferno;
+                bot.mesh = createHumanoid(sk.color, 'rifle', botSkin);
+                bot.mesh.userData.skinId = botSkin;
                 scene.add(bot.mesh);
             }
             bot.mesh.visible = true;
             bot.mesh.position.set(bot.x, -0.5, bot.z);
+            botRing.visible = true;
         }
-        function hideBot() { if (bot.mesh) bot.mesh.visible = false; }
+        function hideBot() { if (bot.mesh) bot.mesh.visible = false; botRing.visible = false; }
 
         // ---------- Input (left stick move, right 🔥 drag = manual aim+fire, NO auto-aim) ----------
         const keys = { w: false, a: false, s: false, d: false };
@@ -935,10 +1048,11 @@
                 }
                 for (const [id, info] of newRemote) {
                     if (!remotePlayers.has(id)) {
-                        const mesh = createHumanoid(0xff5533, 'rifle');
+                        const sk = SKINS[info.skin] || SKINS.commando;
+                        const mesh = createHumanoid(sk.color, 'rifle', info.skin || 'commando');
                         mesh.position.set(0, -0.5, 0);
                         scene.add(mesh);
-                        remotePlayers.set(id, { mesh, ...info, x: 0, z: 0, angle: 0, health: 100, alive: true });
+                        remotePlayers.set(id, { mesh, ...info, skin: info.skin || 'commando', x: 0, z: 0, angle: 0, health: 100, alive: true });
                     }
                 }
             });
@@ -947,9 +1061,18 @@
                     if (p.id === socket.id) continue;
                     const remote = remotePlayers.get(p.id);
                     if (remote) {
+                        if (p.skin && p.skin !== remote.skin && SKINS[p.skin]) {
+                            scene.remove(remote.mesh);
+                            const sk = SKINS[p.skin];
+                            const mesh = createHumanoid(sk.color, 'rifle', p.skin);
+                            scene.add(mesh);
+                            remote.mesh = mesh;
+                            remote.skin = p.skin;
+                        }
                         remote.x = p.x; remote.z = p.y; remote.angle = p.angle;
                         remote.mesh.position.set(p.x, -0.5, p.y);
                         remote.mesh.rotation.y = -p.angle + Math.PI/2;
+                        remote.mesh.visible = remote.alive !== false;
                         animateHumanoid(remote.mesh, true, 0.05);
                     }
                 }
@@ -979,10 +1102,11 @@
                 if (data.obstacles) { OBSTACLES = data.obstacles; buildObstacles(OBSTACLES); }
                 for (const w of data.world) {
                     if (!remotePlayers.has(w.id)) {
-                        const mesh = createHumanoid(0xff5533, 'rifle');
+                        const sk = SKINS[w.skin] || SKINS.commando;
+                        const mesh = createHumanoid(sk.color, 'rifle', w.skin || 'commando');
                         mesh.position.set(w.x, -0.5, w.y);
                         scene.add(mesh);
-                        remotePlayers.set(w.id, { mesh, name: w.name, playerIndex: w.playerIndex, x: w.x, z: w.y, angle: w.angle, health: 100, alive: true });
+                        remotePlayers.set(w.id, { mesh, name: w.name, playerIndex: w.playerIndex, skin: w.skin || 'commando', x: w.x, z: w.y, angle: w.angle, health: 100, alive: true });
                     }
                 }
                 // Stay in lobby until the host starts (server only simulates a live match).
@@ -1128,6 +1252,7 @@
             player.x = -6; player.z = 0; player.health = 100; player.alive = true; player.kills = 0;
             player.mesh.position.set(player.x, -0.5, player.z);
             bot.x = 6; bot.z = 0; bot.health = 100; bot.alive = true; bot.kills = 0;
+            botSkin = ['glacier', 'inferno', 'viper'][Math.floor(Math.random() * 3)];
             ensureBotMesh();
             updateBulletVisuals([]);
             killfeedEl.innerHTML = '';
@@ -1324,7 +1449,7 @@
             if (botMode) updateBotBullets(dt);
 
             if (socket && !botMode && player.alive) {
-                socket.emit('player-state', { x: player.x, y: player.z, angle: player.angle, facingRight: true });
+                socket.emit('player-state', { x: player.x, y: player.z, angle: player.angle, facingRight: true, skin: currentSkin });
             }
             if (botMode) hudPlayerHP.textContent = Math.ceil(Math.max(0, player.health));
         }
@@ -1338,6 +1463,9 @@
                 camera.position.z += ((player.z + 20) - camera.position.z) * 0.12;
                 camera.position.y += (15 - camera.position.y) * 0.12;
                 camera.lookAt(player.x, 0, player.z);
+                playerRing.position.set(player.x, -0.36, player.z);
+                playerRing.visible = gameState === STATE.PLAYING;
+                if (botMode && bot.mesh) botRing.position.set(bot.x, -0.36, bot.z);
             } else {
                 camera.position.set(0, 25, 25);
                 camera.lookAt(0, 0, 0);
@@ -1489,6 +1617,7 @@
             soundToggle.textContent = soundOn ? '🔊' : '🔇';
         });
         document.querySelectorAll('.weapon-btn').forEach(b => b.addEventListener('click', () => { ac(); setWeapon(b.dataset.w); }));
+        document.querySelectorAll('.skin-btn').forEach(b => b.addEventListener('click', () => { ac(); setSkin(b.dataset.s); }));
 
         // Menu
         playBtn.addEventListener('click', () => { ac(); hideBot(); startBotMatch(); });
@@ -1529,6 +1658,7 @@
         // Init
         loadSettings();
         setWeapon(currentWeapon);
+        setSkin(currentSkin);
         hudTimer.textContent = fmtTime(600);
         menu.classList.remove('hidden');
         lobby.classList.add('hidden');
